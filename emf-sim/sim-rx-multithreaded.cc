@@ -3,6 +3,7 @@
 #include <atomic>
 #include <functional>
 #include <iostream>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -16,31 +17,61 @@ constexpr double mu = 1.2566370614e-6;
 constexpr int kNumWavelengths = 8;
 
 template <typename F> double IterateCurve(double increment, F &&f) {
+  struct Segment {
+    double x0, y0, x1, y1;
+  };
+  static std::vector<Segment> pointStore;
+  static std::mutex pointStoreLock;
+
+  if (pointStore.size() == 0) {
+    std::lock_guard<std::mutex> ul(pointStoreLock);
+
+    // std::cerr << "ps lock" << std::endl;
+    if (pointStore.size() == 0) {
+      // std::cerr << "ps write" << std::endl;
+      double x = 0.0, y = 0.0;
+      const double numDivision = ceil(kLambda*kNumWavelengths/increment);
+      int idx = 0;
+      for (int wavenumber = 0; wavenumber < kNumWavelengths; ++wavenumber) {
+        const int limit = (int)((((double)wavenumber+1.0)*numDivision)/kNumWavelengths);
+        for (; idx < limit; ++idx) {
+          const double nx = kLambda*kNumWavelengths*((double)idx + 1.0)/numDivision;
+          const double ny = 0.5*kWidth * sin(2*PI*nx/kLambda);
+          pointStore.push_back(Segment{x, y, nx, ny});
+          x = nx, y = ny;
+        }
+      }
+      idx = 0;
+      for (int wavenumber = 0; wavenumber < kNumWavelengths; ++wavenumber) {
+        double subsum = 0.0;
+        const int limit = (int)((((double)wavenumber+1.0)*numDivision)/kNumWavelengths);
+        for (; idx < limit; ++idx) {
+          const double nx = kLambda*kNumWavelengths*(1.0 - ((double)idx + 1.0)/numDivision);
+          const double ny = -0.5*kWidth * sin(2*PI*nx/kLambda);
+          pointStore.push_back(Segment{x, y, nx, ny});
+          x = nx, y = ny;
+        }
+      }
+    }
+
+    // std::cerr << "ps unlock" << std::endl;
+  }
+
+  // lock and unlock to make sure no one else is writing to it
+  pointStoreLock.lock();
+  pointStoreLock.unlock();
+
   double accum = 0.0;
   double x = 0.0, y = 0.0;
   const double numDivision = ceil(kLambda*kNumWavelengths/increment);
   // split summations into smaller groups to avoid truncation
   int idx = 0;
-  for (int wavenumber = 0; wavenumber < kNumWavelengths; ++wavenumber) {
+  for (int wavenumber = 0; wavenumber < 2*kNumWavelengths; ++wavenumber) {
     double subsum = 0.0;
-    const int limit = (int)((((double)wavenumber+1.0)*numDivision)/kNumWavelengths);
-    for (; idx < limit; ++idx) {
-      const double nx = kLambda*kNumWavelengths*((double)idx + 1.0)/numDivision;
-      const double ny = 0.5*kWidth * sin(2*PI*nx/kLambda);
-      subsum += f(x, y, nx, ny);
-      x = nx, y = ny;
-    }
-    accum += subsum;
-  }
-  idx = 0;
-  for (int wavenumber = 0; wavenumber < kNumWavelengths; ++wavenumber) {
-    double subsum = 0.0;
-    const int limit = (int)((((double)wavenumber+1.0)*numDivision)/kNumWavelengths);
-    for (; idx < limit; ++idx) {
-      const double nx = kLambda*kNumWavelengths*(1.0 - ((double)idx + 1.0)/numDivision);
-      const double ny = -0.5*kWidth * sin(2*PI*nx/kLambda);
-      subsum += f(x, y, nx, ny);
-      x = nx, y = ny;
+    const int limit = (int)((((double)wavenumber+1.0)*pointStore.size())/(2*kNumWavelengths));
+    for (; idx < limit && idx < pointStore.size(); ++idx) {
+      auto &segment = pointStore[idx];
+      subsum += f(segment.x0, segment.y0, segment.x1, segment.y1);
     }
     accum += subsum;
   }
