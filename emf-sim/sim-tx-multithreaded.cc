@@ -71,14 +71,15 @@ template <typename F> double IterateArea(double increment, F &&f) {
             const double x = 0.5*kLambda*((double)idx + 0.5)/numDivision + cross*kLambda;
             const double amp = kWidth*sin(2.0*PI*x/kLambda);
             const int numDivisionY = ceil(2*amp/increment);
+            const double area = (kLambda/2.0/numDivision)*(2.0*amp/numDivisionY);
             // std::cerr << "y divisions: " << numDivisionY << std::endl;
             for (int idx2 = 0; idx2 < numDivisionY; ++idx2) {
               // reordered version of -amp + (idx + 0.5)*(2.0*amp/numDivisionY)
               const double y = amp*(2.0*((double)idx + 0.5)/(double)numDivisionY - 1.0);
               if (isPositive) {
-                subsum += f(x, y);
+                subsum += area*f(x, y);
               } else {
-                subsum -= f(x, y);
+                subsum -= area*f(x, y);
               }
             }
           }
@@ -107,14 +108,15 @@ template <typename F> double IterateArea(double increment, F &&f) {
         const double x = 0.5*kLambda*((double)idx + 0.5)/numDivision + cross*kLambda;
         const double amp = kWidth*sin(2.0*PI*x/kLambda);
         const int numDivisionY = ceil(2*amp/increment);
+        const double area = (kLambda/2.0/numDivision)*(2.0*amp/numDivisionY);
         // std::cerr << "y divisions: " << numDivisionY << std::endl;
         for (int idx2 = 0; idx2 < numDivisionY; ++idx2) {
           // reordered version of -amp + (idx + 0.5)*(2.0*amp/numDivisionY)
           const double y = amp*(2.0*((double)idx + 0.5)/(double)numDivisionY - 1.0);
           if (isPositive) {
-            subsum += f(x, y);
+            subsum += area*f(x, y);
           } else {
-            subsum -= f(x, y);
+            subsum -= area*f(x, y);
           }
         }
       }
@@ -122,7 +124,7 @@ template <typename F> double IterateArea(double increment, F &&f) {
       accum += subsum;
     }
   }
-  return accum;
+  return 1.0e-6*accum;
 }
 
 template <typename F> double IterateCircle(double increment, F&& f) {
@@ -190,9 +192,10 @@ int main() {
 
   const double result = IterateArea(incr, [&](double rx, double ry) {
       return IterateCurve(incr, [&](double x0, double y0, double x1, double y1) {
-          Eigen::Vector3d r(rx, ry, 0.0);
-          Eigen::Vector3d l(0.5*(x0+x1), 0.5*(y0+y1), 0.0);
-          Eigen::Vector3d dl(x1-x0, y1-y0, 0.0);
+          // divide all units by a thousand because they're all in millimeters
+          Eigen::Vector3d r = Eigen::Vector3d(rx, ry, 0.0)/1000.0;
+          Eigen::Vector3d l = Eigen::Vector3d(0.5*(x0+x1), 0.5*(y0+y1), 0.0)/1000.0;
+          Eigen::Vector3d dl = Eigen::Vector3d(x1-x0, y1-y0, 0.0)/1000.0;
           Eigen::Vector3d rp = r - l;
           Eigen::Vector3d dB = dl.cross(rp)/pow(rp.norm(), 3.0);
           return (mu/(4.0*PI))*dB[2];
