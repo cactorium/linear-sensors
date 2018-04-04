@@ -68,8 +68,8 @@ template <typename F> double IterateArea(double increment, F &&f) {
           double subsum = 0.0;
 
           for (int idx = 0; idx < numDivision; ++idx) {
-            const double x = 0.5*kLambda*((double)idx + 0.5)/numDivision + cross*kLambda;
-            const double amp = kWidth*sin(2.0*PI*x/kLambda);
+            const double x = 0.5*kLambda*((double)idx + 0.5)/numDivision + cross*kLambda/2.0;
+            const double amp = abs(kWidth*sin(2.0*PI*x/kLambda));
             const int numDivisionY = ceil(2*amp/increment);
             const double area = (kLambda/2.0/numDivision)*(2.0*amp/numDivisionY);
             // std::cerr << "y divisions: " << numDivisionY << std::endl;

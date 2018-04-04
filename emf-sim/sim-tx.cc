@@ -66,7 +66,7 @@ template <typename F> double IterateArea(double increment, F &&f) {
       const double y = -kWidth/2.0 + ((idxY + 0.5)*kWidth)/numDivisionWidth;
       subsum += area*f(x, y);
     }
-    std::cerr << "subsum " << subsum << std::endl;
+    std::cerr << "subsum " << idxX << " " << subsum << std::endl;
     accum += subsum;
   }
   return 1.0e-6*accum;
