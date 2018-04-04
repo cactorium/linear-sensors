@@ -1,0 +1,17 @@
+thread 0 spawned
+thread 1 spawned
+thread 2 spawned
+thread 3 spawned
+thread 5 spawned
+thread 7 spawned
+thread 6 spawned
+thread 4 spawned
+worker 0 exited
+worker 1 exited
+worker 2 exited
+worker 3 exited
+worker 4 exited
+worker 5 exited
+worker 6 exited
+worker 7 exited
+L = -2.82366e-07

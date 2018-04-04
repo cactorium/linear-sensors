@@ -1,3 +1,4 @@
 sim-tx
-sim-rx-multithreaded
+sim-tx-multithreaded
 sim-rx
+sim-rx-multithreaded
