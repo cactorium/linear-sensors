@@ -1,3 +1,6 @@
 tx_calculated: L = 2.17484e-07
 rx_calculated: L = 2.82366e-07
-
+rx with 0.0001 curve increments: L = -3.00018e-07
+rx with 0.00005 increments: L = -3.01606e-07
+tx with 0.0001 increments: L = 2.06672e-07
+tx with 0.00005 increments L = 2.06672e-07

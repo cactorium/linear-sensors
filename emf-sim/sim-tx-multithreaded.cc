@@ -80,7 +80,7 @@ template <typename F> double IterateArea(double increment, F &&f) {
             const double y = -kWidth/2.0 + ((idxY + 0.5)*kWidth)/numDivisionWidth;
             subsum += area*f(x, y);
           }
-          std::cout << "subsum " << idxX << " " << subsum << std::endl;
+          // std::cout << "subsum " << idxX << " " << subsum << std::endl;
           localSum += subsum;
         }
         ret = localSum;
@@ -121,7 +121,7 @@ int main() {
 #endif
 
   const double result = IterateArea(incr, [&](double rx, double ry) {
-      return IterateCurve(incr, [&](double x0, double y0, double x1, double y1) {
+      return IterateCurve(0.05*incr, [&](double x0, double y0, double x1, double y1) {
           // divide all units by a thousand because they're all in millimeters
           // std::cout << "(" << rx << ", " << ry << ", " << x0 << ", " << y0 << ", " << x1 << ", " << y1 << "), ";
           Eigen::Vector3d r = Eigen::Vector3d(rx, ry, 0.0)/1000.0;

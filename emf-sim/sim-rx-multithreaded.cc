@@ -222,7 +222,7 @@ int main() {
 #endif
 
   const double result = IterateArea(incr, [&](double rx, double ry) {
-      return IterateCurve(incr, [&](double x0, double y0, double x1, double y1) {
+      return IterateCurve(0.05*incr, [&](double x0, double y0, double x1, double y1) {
           // divide all units by a thousand because they're all in millimeters
           Eigen::Vector3d r = Eigen::Vector3d(rx, ry, 0.0)/1000.0;
           Eigen::Vector3d l = Eigen::Vector3d(0.5*(x0+x1), 0.5*(y0+y1), 0.0)/1000.0;
