@@ -1,4 +1,4 @@
-update=Wed 03 Jan 2018 02:14:27 AM EST
+update=Fri 20 Apr 2018 10:59:50 AM EDT
 version=1
 last_client=kicad
 [pcbnew]
@@ -23,6 +23,8 @@ ModuleOutlineThickness=0.150000000000
 [cvpcb]
 version=1
 NetIExt=net
+[general]
+version=1
 [eeschema]
 version=1
 LibDir=
@@ -59,5 +61,10 @@ LibName29=opto
 LibName30=atmel
 LibName31=contrib
 LibName32=valves
-[general]
-version=1
+LibName33=adg801brmz-reel7
+LibName34=ads7046irugr
+LibName35=ds1023s-500+
+LibName36=sn74lvc1g3157dbvr
+LibName37=tlv3544qpwrq1
+LibName38=adg802brmz
+LibName39=stm32f070c6t6

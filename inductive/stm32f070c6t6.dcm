@@ -1,0 +1,8 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP STM32F070C6T6
+D ARM Microcontrollers - MCU Entry-level ARM Cortex-M0 Value line MCU with up to 32 Kbytes Flash, 48 MHz CPU
+F https://www.mouser.com/ProductDetail/STMicroelectronics/STM32F070C6T6
+$ENDCMP
+#
+#End Doc Library
