@@ -14,12 +14,12 @@ prologue = """(module ANT_RX_45_135 (layer F.Cu)
 epilogue = """)"""
 
 width = 0.340*25.4
-l = 0.200*25.4
+l = 5.08
 
 step_size = 0.05
 
-perp_clearance = (0.00325 + 0.006) * 25.4
-thickness = 0.0065 * 25.4 # 6.5 wide so that it'll definitely pass DRC
+thickness = 0.0045 * 25.4 # 6.5 wide so that it'll definitely pass DRC
+perp_clearance = 0.5*thickness + 0.004 * 25.4
 
 print(prologue)
 
