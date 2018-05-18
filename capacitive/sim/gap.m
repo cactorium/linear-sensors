@@ -21,4 +21,8 @@ y(x < g) = angle((A*(h-x(x<g))/h+B+C+D)./overlap(x<g));
 y(x >= g) = angle((A*(h-x(x>=g))/h+B+C+D+E*(x(x>=g)-g)/h)./overlap(x>=g));
 y(x >= h) = angle((B+C+D+E*(x(x>=h)-g)/h)./overlap(x>=h));
 
-c = zeros(1,length(x));
+k=1;
+e=8.854e-12;
+A=w*h*overlap;
+
+c = k*e*A/z;
