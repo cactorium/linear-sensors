@@ -53,7 +53,7 @@ def quotesplit(line):
 def main():
   parser = argparse.ArgumentParser(description="Autofills components in an Eeschema schematic")
   parser.add_argument("input", help="file to autofill")
-  parser.add_argument("--output", help="file to write autofilled schematic to")
+  parser.add_argument("output", help="file to write autofilled schematic to")
 
   args = parser.parse_args()
 
@@ -209,6 +209,22 @@ def main():
     lines = lines[0:idx+1] + [" ".join(row)] + lines[idx+1:]
 
   print("autofilled {} fp, {} mfg".format(autofill_fp, autofill_mfg))
+  # dictionary of dictionaries of components without footprints
+  # missing[cls][value] = [designators]
+  missing = dict()
+
+  for c in components:
+    if c.cls is not None:
+      if c.cls not in missing:
+        missing[c.cls] = dict()
+      if c.value is not None:
+        if c.value not in missing[c.cls]:
+          missing[c.cls][c.value] = []
+        missing[c.cls][c.value].append(c.designator)
+
+  for cls in missing:
+    for value in missing[cls]:
+      print("NOTE: no unique footprint found for {} {}".format(value, missing[cls][value]))
 
   output = args.output or args.input
   print("outputting to {}...".format(output))
