@@ -118,7 +118,7 @@ def main():
           filled_values[c.cls][c.value] = []
 
         if c.footprint is not None and len(c.footprint) > 2:
-          print(c.designator, c.value, c.footprint, c.manufacturers)
+          # print(c.designator, c.value, c.footprint, c.manufacturers)
           tosearch = filled_values[c.cls][c.value]
           # find element with matching footprint
           found = None
@@ -173,16 +173,15 @@ def main():
         if len(matches) == 1:
           # autofill
           match = matches[0]
-          print("matched {} with {}".format(c.designator, match))
           if ((c.footprint is None or len(c.footprint) <= 2) and 
               c.footprint_row is not None):
+            print("matched {} {} with {}".format(c.designator, c.value, match))
             # rewrite footprint
             c.footprint = match[0]
             row = c.footprint_row[1]
             row[2] = match[0]
             lines[c.footprint_row[0]] = " ".join(row)
             autofill_fp += 1
-            print("autofilled fp for {}".format(c.designator))
           # add in manufacturers 
           mfg_added = 0
           for mfg in match[2]:
@@ -217,7 +216,7 @@ def main():
     if c.cls is not None:
       if c.cls not in missing:
         missing[c.cls] = dict()
-      if c.value is not None:
+      if c.value is not None and c.footprint is None:
         if c.value not in missing[c.cls]:
           missing[c.cls][c.value] = []
         missing[c.cls][c.value].append(c.designator)
