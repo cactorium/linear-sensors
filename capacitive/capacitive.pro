@@ -1,4 +1,4 @@
-update=Fri 18 May 2018 10:13:37 PM EDT
+update=Sat 19 May 2018 04:53:19 PM EDT
 version=1
 last_client=kicad
 [pcbnew]
@@ -65,3 +65,4 @@ LibName33=stm32f070c6t6
 LibName34=tlv9062idr
 LibName35=sg7050can_8mhz
 LibName36=tlv74133pdbvr
+LibName37=d3v3x4u10lp-7
