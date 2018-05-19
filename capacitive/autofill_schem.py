@@ -3,7 +3,7 @@
 
 import argparse
 
-MANUFACTURER_VALUES = ["\"Mouser\""]
+DISTRIBUTOR_VALUES = ["\"Mouser\""]
 
 class Component(object):
   def __init__(self, start):
@@ -11,9 +11,9 @@ class Component(object):
     self.value = None
     self.footprint = None
     self.footprint_row = None
-    # manufacturer ids, mapped to (line_num, value, all fields
+    # distributor ids, mapped to (line_num, value, all fields
     # (to make reconstruction easier)
-    self.manufacturers = dict()
+    self.distributors = dict()
     self.cls = None
     self.last_value = None
     self.num_fields = 0
@@ -21,7 +21,7 @@ class Component(object):
     # used mainly for parser debugging
     self.start = start
 
-class ManufacturerData(object):
+class DistributorData(object):
   def __init__(self, line_num, id, row):
     self.line_num = line_num
     self.id = id
@@ -83,8 +83,8 @@ def main():
                 component.footprint = parts[2]
             elif field_type > 3:
               # TODO: make case insensitive
-              if parts[-1][:-1] in MANUFACTURER_VALUES:
-                component.manufacturers[parts[-1][:-1]] = ManufacturerData(i, parts[2], parts)
+              if parts[-1][:-1] in DISTRIBUTOR_VALUES:
+                component.distributors[parts[-1][:-1]] = DistributorData(i, parts[2], parts)
         elif line.startswith("$EndComp"):
           component_start = False
           # ignore power nodes
@@ -101,11 +101,11 @@ def main():
   without_footprints = len([None for c in components if c.footprint is None])
   print("found {} components without footprints".format(without_footprints))
   # dictionaries in dictionaries:
-  # manufacturer = (manufacturer_type, id) so that non-unique ids can be captured
-  # filled_values[cls][value] = [(footprint, [designators], [manufacturers])]
+  # distributor = (distributor_type, id) so that non-unique ids can be captured
+  # filled_values[cls][value] = [(footprint, [designators], [distributors])]
   filled_values = dict()
 
-  # first pass to infer footprints and manufacturers, second pass to fill in details
+  # first pass to infer footprints and distributors, second pass to fill in details
   for c in components:
     if c.cls is None or len(c.cls) == 0:
       print("Component at {} incorrectly parsed; no cls set".format(c.start))
@@ -118,7 +118,7 @@ def main():
           filled_values[c.cls][c.value] = []
 
         if c.footprint is not None and len(c.footprint) > 2:
-          # print(c.designator, c.value, c.footprint, c.manufacturers)
+          # print(c.designator, c.value, c.footprint, c.distributors)
           tosearch = filled_values[c.cls][c.value]
           # find element with matching footprint
           found = None
@@ -128,19 +128,19 @@ def main():
               break
 
           if found is None:
-            manufacturers = []
-            for mfg in c.manufacturers:
-              if len(c.manufacturers[mfg].id) > 2 and len(mfg) > 2:
-                manufacturers.append((mfg, c.manufacturers[mfg].id))
-            tosearch.append((c.footprint, [c.designator], manufacturers))
+            distributors = []
+            for dist in c.distributors:
+              if len(c.distributors[dist].id) > 2 and len(dist) > 2:
+                distributors.append((dist, c.distributors[dist].id))
+            tosearch.append((c.footprint, [c.designator], distributors))
           else:
             tosearch[i][1].append(c.designator)
-            # append any new manufacturers
-            for mfg in c.manufacturers:
-              if len(c.manufacturers[mfg].id) > 2 and len(mfg) > 2:
-                if not any([mfg == m[0] and c.manufacturers[mfg].id == m[1] 
+            # append any new distributors
+            for dist in c.distributors:
+              if len(c.distributors[dist].id) > 2 and len(dist) > 2:
+                if not any([dist == m[0] and c.distributors[dist].id == m[1] 
                     for m in tosearch[i][2]]):
-                  tosearch[i][2].append((mfg, c.manufacturers[mfg].id))
+                  tosearch[i][2].append((dist, c.distributors[dist].id))
 
   entry_count = 0
   conflicts = []
@@ -151,7 +151,7 @@ def main():
         entry_count += 1
   print("found {} filled unique component classes".format(entry_count))
 
-  # TODO: allow interactive manufacturer choice to resolve conflicts
+  # TODO: allow interactive distributor choice to resolve conflicts
   while len(conflicts) > 0:
     print("found conflicting information, cannot autofill")
     for conflict in conflicts:
@@ -160,7 +160,7 @@ def main():
 
   # autofill
   autofill_fp = 0
-  autofill_mfg = 0
+  autofill_dist = 0
   to_append = []
   for c in components:
     if c.cls in filled_values:
@@ -182,32 +182,32 @@ def main():
             row[2] = match[0]
             lines[c.footprint_row[0]] = " ".join(row)
             autofill_fp += 1
-          # add in manufacturers 
-          mfg_added = 0
-          for mfg in match[2]:
-            if mfg[0] not in c.manufacturers:
+          # add in distributors 
+          dist_added = 0
+          for dist in match[2]:
+            if dist[0] not in c.distributors:
               # append to the field list
               template_row = quotesplit(lines[c.last_value])
               row = [
                   template_row[0],
                   str(c.num_fields),
-                  mfg[1]] + template_row[3:10] + [mfg[0] + "\n"]
+                  dist[1]] + template_row[3:10] + [dist[0] + "\n"]
               c.num_fields += 1
               to_append.append((c.last_value, row))
-              mfg_added += 1
+              dist_added += 1
               # mark as something to do, because appending now would
               # cause the row numbers to shift for all the components after this one,
               # invalidating their indices
-          if mfg_added > 0:
-            autofill_mfg += 1
+          if dist_added > 0:
+            autofill_dist += 1
 
-    # print(c.designator, c.value, c.footprint, c.manufacturers)
+    # print(c.designator, c.value, c.footprint, c.distributors)
   for ta in reversed(to_append):
     idx = ta[0]
     row = ta[1]
     lines = lines[0:idx+1] + [" ".join(row)] + lines[idx+1:]
 
-  print("autofilled {} fp, {} mfg".format(autofill_fp, autofill_mfg))
+  print("autofilled {} fp, {} dist".format(autofill_fp, autofill_dist))
   # dictionary of dictionaries of components without footprints
   # missing[cls][value] = [designators]
   missing = dict()
