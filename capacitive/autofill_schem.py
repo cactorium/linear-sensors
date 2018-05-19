@@ -177,6 +177,7 @@ def main():
           if ((c.footprint is None or len(c.footprint) <= 2) and 
               c.footprint_row is not None):
             # rewrite footprint
+            c.footprint = match[0]
             row = c.footprint_row[1]
             row[2] = match[0]
             lines[c.footprint_row[0]] = " ".join(row)
@@ -207,10 +208,13 @@ def main():
     row = ta[1]
     lines = lines[0:idx+1] + [" ".join(row)] + lines[idx+1:]
 
-  # for line in lines:
-    # print(line,end="")
-
   print("autofilled {} fp, {} mfg".format(autofill_fp, autofill_mfg))
+
+  output = args.output or args.input
+  print("outputting to {}...".format(output))
+  with open(output, "w+") as f:
+    for line in lines:
+      f.write(line)
 
 if __name__ == "__main__":
   main()
