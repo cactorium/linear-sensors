@@ -1,4 +1,4 @@
-update=Sun 22 Apr 2018 09:05:06 AM EDT
+update=Fri 18 May 2018 10:13:37 PM EDT
 version=1
 last_client=kicad
 [pcbnew]
@@ -62,3 +62,6 @@ LibName30=atmel
 LibName31=contrib
 LibName32=valves
 LibName33=stm32f070c6t6
+LibName34=tlv9062idr
+LibName35=sg7050can_8mhz
+LibName36=tlv74133pdbvr
