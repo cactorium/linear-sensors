@@ -22,10 +22,8 @@ class Component(object):
     self.start = start
 
 class DistributorData(object):
-  def __init__(self, line_num, id, row):
-    self.line_num = line_num
+  def __init__(self, id):
     self.id = id
-    self.row = row
 
 def quotesplit(line):
   parts = line.split(" ")
@@ -84,7 +82,7 @@ def main():
             elif field_type > 3:
               # TODO: make case insensitive
               if parts[-1][:-1] in DISTRIBUTOR_VALUES:
-                component.distributors[parts[-1][:-1]] = DistributorData(i, parts[2], parts)
+                component.distributors[parts[-1][:-1]] = DistributorData(parts[2])
         elif line.startswith("$EndComp"):
           component_start = False
           # ignore power nodes
@@ -186,6 +184,7 @@ def main():
           dist_added = 0
           for dist in match[2]:
             if dist[0] not in c.distributors:
+              c.distributors[dist[0]] = DistributorData(dist[1])
               # append to the field list
               template_row = quotesplit(lines[c.last_value])
               row = [
@@ -224,6 +223,23 @@ def main():
   for cls in missing:
     for value in missing[cls]:
       print("NOTE: no unique footprint found for {} {}".format(value, missing[cls][value]))
+
+  # repeat for manufacturer info
+  missing = dict()
+
+  for c in components:
+    if c.cls is not None:
+      if c.cls not in missing:
+        missing[c.cls] = dict()
+      if c.value is not None and not bool(c.distributors):
+        if c.value not in missing[c.cls]:
+          missing[c.cls][c.value] = []
+        missing[c.cls][c.value].append(c.designator)
+
+  for cls in missing:
+    for value in missing[cls]:
+      print("NOTE: no distributor data found for {} {}".format(value, missing[cls][value]))
+
 
   output = args.output or args.input
   print("outputting to {}...".format(output))
