@@ -243,7 +243,7 @@ def main():
     if c.cls is not None:
       if c.cls not in missing:
         missing[c.cls] = dict()
-      if c.value is not None and not bool(c.distributors):
+      if c.value is not None and c.value != "\"DNP\"" and not bool(c.distributors):
         if c.value not in missing[c.cls]:
           missing[c.cls][c.value] = []
         missing[c.cls][c.value].append(c.designator)
