@@ -9,7 +9,7 @@ from pad_config import *
 R=10e+6
 
 A_tx=wavenumber*(1.0e-3*W)*(1.0e-3*l)/8
-A_rx=(width_ratio*(1.0e-3*W))*(wavenumber)*(1.0e-3*l)
+A_rx=(width_ratio*(1.0e-3*W))*(wavenumber)*(1.0e-3*(l-g))
 
 C_tx = k*e*A_tx/z
 C_rx = k*e*A_rx/z
