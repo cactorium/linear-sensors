@@ -12,7 +12,6 @@ width_ratio = 1
 clearance = 4*g
 
 ## scale geometry
-scale_length = 200.00
 scale_ground_trace_width = 0.300
 # size of the holes for mounting the scales to whatever
 scale_drill_dia = 0.125*25.4
@@ -55,7 +54,6 @@ assert g > 0
 assert width_ratio > 0
 assert clearance > 0
 
-assert scale_length > 0
 assert scale_ground_trace_width > 0.006*25.4 # ground trace must be greater than minimum width
 assert scale_drill_dia > min_drill_dia
 assert scale_drill_ring_dia > min_annular_ring_dia
@@ -63,8 +61,6 @@ assert scale_mount_clearance > 0.5*scale_drill_ring_dia
 assert board_edge_clearance > 0
 
 # TODOs
-# scales
-# scale ground
 # scale drill (left, right)
 # scale outline helper(left, right)
 # slide drill (left, right)
