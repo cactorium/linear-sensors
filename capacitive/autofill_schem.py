@@ -48,56 +48,47 @@ def quotesplit(line):
         ret.append(part)
   return ret
 
-def main():
-  parser = argparse.ArgumentParser(description="Autofills components in an Eeschema schematic")
-  parser.add_argument("input", help="file to autofill")
-  parser.add_argument("output", help="file to write autofilled schematic to")
-
-  args = parser.parse_args()
-
+def parse_lines(f):
   lines = []
   components = []
+  component_start = False
+  component = None
 
-  with open(args.input, 'r') as f:
-    component_start = False
-    component = None
-    for i, line in enumerate(f):
-      if component_start:
-        if line.startswith("L"):
-          parts = quotesplit(line)
-          component.designator = parts[2].rstrip()
-          component.cls = component.designator[0]
-        elif line.startswith("F"):
-          parts = quotesplit(line)
-          component.num_fields += 1
-          component.last_value = i
-          if parts[1].isdigit():
-            field_type = int(parts[1])
-            if field_type == 1:
-              component.value = parts[2]
-            elif field_type == 2:
-              component.footprint_row = (i, parts)
-              if len(parts[2]) > 2:
-                component.footprint = parts[2]
-            elif field_type > 3:
-              # TODO: make case insensitive
-              if parts[-1][:-1] in DISTRIBUTOR_VALUES:
-                component.distributors[parts[-1][:-1]] = DistributorData(parts[2])
-        elif line.startswith("$EndComp"):
-          component_start = False
-          # ignore power nodes
-          if component.cls != "#":
-            components.append(component)
+  for i, line in enumerate(f):
+    if component_start:
+      if line.startswith("L"):
+        parts = quotesplit(line)
+        component.designator = parts[2].rstrip()
+        component.cls = component.designator[0]
+      elif line.startswith("F"):
+        parts = quotesplit(line)
+        component.num_fields += 1
+        component.last_value = i
+        if parts[1].isdigit():
+          field_type = int(parts[1])
+          if field_type == 1:
+            component.value = parts[2]
+          elif field_type == 2:
+            component.footprint_row = (i, parts)
+            if len(parts[2]) > 2:
+              component.footprint = parts[2]
+          elif field_type > 3:
+            # TODO: make case insensitive
+            if parts[-1][:-1] in DISTRIBUTOR_VALUES:
+              component.distributors[parts[-1][:-1]] = DistributorData(parts[2])
+      elif line.startswith("$EndComp"):
+        component_start = False
+        # ignore power nodes
+        if component.cls != "#":
+          components.append(component)
 
-      if line.startswith("$Comp"):
-        component_start = True
-        component = Component(i)
-      lines.append(line)
+    if line.startswith("$Comp"):
+      component_start = True
+      component = Component(i)
+    lines.append(line)
+  return (lines, components)
 
-  print("{} lines".format(len(lines)))
-  print("found {} components".format(len(components)))
-  without_footprints = len([None for c in components if c.footprint is None])
-  print("found {} components without footprints".format(without_footprints))
+def infer_components(components):
   # dictionaries in dictionaries:
   # distributor = (distributor_type, id) so that non-unique ids can be captured
   # filled_values[cls][value] = [(footprint, [designators], [distributors])]
@@ -139,6 +130,27 @@ def main():
                 if not any([dist == m[0] and c.distributors[dist].id == m[1] 
                     for m in tosearch[i][2]]):
                   tosearch[i][2].append((dist, c.distributors[dist].id))
+  return filled_values
+
+def main():
+  parser = argparse.ArgumentParser(description="Autofills components in an Eeschema schematic")
+  parser.add_argument("input", help="file to autofill")
+  parser.add_argument("output", help="file to write autofilled schematic to")
+
+  args = parser.parse_args()
+
+  lines = None
+  components = None
+
+  with open(args.input, 'r') as f:
+    (lines, components) = parse_lines(f)
+
+  print("{} lines".format(len(lines)))
+  print("found {} components".format(len(components)))
+  without_footprints = len([None for c in components if c.footprint is None])
+  print("found {} components without footprints".format(without_footprints))
+
+  filled_values = infer_components(components)
 
   entry_count = 0
   conflicts = []
