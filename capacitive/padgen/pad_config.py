@@ -12,7 +12,7 @@ width_ratio = 1
 clearance = 4*g
 
 ## scale geometry
-scale_length = 20.00
+scale_length = 200.00
 scale_ground_trace_width = 0.300
 # size of the holes for mounting the scales to whatever
 scale_drill_dia = 0.125*25.4
