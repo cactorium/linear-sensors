@@ -1,0 +1,9 @@
+(module SLIDE_DRILL_LEFT (layer F.Cu) (tedit 5B021406)
+  (fp_text reference REF** (at 11.05 -0.05 90) (layer F.SilkS) hide
+    (effects (font (size 1 1) (thickness 0.15)))
+  )
+  (fp_text value SLIDE_DRILL_LEFT (at 0 -0.5) (layer F.Fab)
+    (effects (font (size 1 1) (thickness 0.15)))
+  )
+  (pad 1 thru_hole circle (at 29.935399999999998 0) (size 4.175 4.175) (drill 3.175) (layers *.Cu *.Mask))
+)

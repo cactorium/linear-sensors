@@ -15,12 +15,13 @@ clearance = 4*g
 scale_ground_trace_width = 0.300
 # size of the holes for mounting the scales to whatever
 scale_drill_dia = 0.125*25.4
-scale_drill_ring_dia = 0.500
+scale_drill_ring_dia = 1.000
 # clearance from the edge of the scale copper to the edge of the mounting holes
-scale_mount_clearance = 0.5*scale_drill_dia
+scale_mount_clearance = 4.00
 
 ## slide geometry
 slide_drill_dia = 0.125*25.4
+slide_drill_ring_dia = 1.000
 
 ## fab settings
 min_drill_dia = 0.3302 
@@ -41,8 +42,10 @@ scale_copper_width = (scale_ground_trace_width + min_clearance + scale_tooth_wid
 scale_hole_to_edge = max(board_edge_clearance + 0.5*(scale_drill_dia + scale_drill_ring_dia),
     scale_drill_ring_dia)
 
-scale_edge = (scale_hole_to_edge + scale_mount_clearance +
-    scale_copper_width + scale_mount_clearance + scale_hole_to_edge)
+scale_left = (scale_hole_to_edge + scale_mount_clearance +
+    scale_ground_trace_width + min_clearance + scale_tooth_width)
+scale_right = scale_root_width + scale_mount_clearance + scale_hole_to_edge
+scale_edge = scale_left + scale_right
 
 # used to set tedit parameter in footprints
 import time
@@ -57,10 +60,8 @@ assert clearance > 0
 assert scale_ground_trace_width > 0.006*25.4 # ground trace must be greater than minimum width
 assert scale_drill_dia > min_drill_dia
 assert scale_drill_ring_dia > min_annular_ring_dia
-assert scale_mount_clearance > 0.5*scale_drill_ring_dia
+assert scale_mount_clearance > 0.5*(scale_drill_dia + scale_drill_ring_dia) + min_clearance
 assert board_edge_clearance > 0
 
 # TODOs
-# scale drill (left, right)
 # scale outline helper(left, right)
-# slide drill (left, right)
