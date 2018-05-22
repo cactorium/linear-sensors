@@ -16,6 +16,6 @@ pad = """  (pad {} smd rect (at {} {}) (size {} {}) (layers F.Cu F.Paste F.Mask)
 pad = """  (pad {} thru_hole circle (at {} {}) (size {} {}) (drill {}) (layers *.Cu *.Mask))"""
 
 total_dia = slide_drill_dia + slide_drill_ring_dia
-print(pad.format(1, 0.5*total_dia + scale_left, 0, total_dia, total_dia, slide_drill_dia))
+print(pad.format(1, -0.5*total_dia - scale_left, 0, total_dia, total_dia, slide_drill_dia))
 
 print(epilogue)

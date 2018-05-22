@@ -3,8 +3,7 @@
 
 ## caliper geometry
 wavenumber = 6
-# I guess we're an imperial caliper now
-l = 5.08
+l = 6.25
 W = 10.0
 g = 0.16
 
@@ -26,6 +25,7 @@ slide_drill_ring_dia = 1.000
 ## fab settings
 min_drill_dia = 0.3302 
 min_annular_ring_dia = 0.3556
+min_via = 0.635
 board_edge_clearance = 0.020*25.4
 min_trace_width = 0.006*25.4
 min_clearance = 0.006*25.4
@@ -51,7 +51,7 @@ scale_edge = scale_left + scale_right
 import time
 gen_time = hex(int(time.time()))[2:].upper()
 
-assert l/8 > 0.6285 # pad length must be larger than minimum via diameter
+assert l/8 > min_via # pad length must be larger than minimum via diameter
 assert W > 0
 assert g > 0
 assert width_ratio > 0
