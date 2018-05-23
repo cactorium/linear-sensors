@@ -1,6 +1,6 @@
-update=Sat 19 May 2018 04:53:19 PM EDT
+update=Tue 22 May 2018 05:08:58 AM EDT
 version=1
-last_client=kicad
+last_client=eeschema
 [pcbnew]
 version=1
 LastNetListRead=
@@ -66,3 +66,13 @@ LibName34=tlv9062idr
 LibName35=sg7050can_8mhz
 LibName36=tlv74133pdbvr
 LibName37=d3v3x4u10lp-7
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=
+SpiceForceRefPrefix=0
+SpiceUseNetNumbers=0
+LabSize=60
