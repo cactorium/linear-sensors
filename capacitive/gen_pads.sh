@@ -12,3 +12,5 @@ python padgen/gen_scale_drill_right.py > capacitive.pretty/Scale_Drill_Right.kic
 
 python padgen/gen_slide_drill_left.py > capacitive.pretty/Slide_Drill_Left.kicad_mod
 python padgen/gen_slide_drill_right.py > capacitive.pretty/Slide_Drill_Right.kicad_mod
+
+python padgen/gen_scale_outline.py > capacitive.pretty/Scale_Outline.kicad_mod

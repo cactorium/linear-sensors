@@ -1,4 +1,4 @@
-(module SLIDE_DRILL_RIGHT (layer F.Cu) (tedit 5B02BC17)
+(module SLIDE_DRILL_RIGHT (layer F.Cu) (tedit 5B06A6AB)
   (fp_text reference REF** (at 11.05 -0.05 90) (layer F.SilkS) hide
     (effects (font (size 1 1) (thickness 0.15)))
   )
