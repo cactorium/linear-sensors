@@ -14,7 +14,7 @@ print(prologue.format(gen_time))
 
 line = """  (fp_line (start {} {}) (end {} {}) (layer F.Fab) (width 0.15))"""
 
-print(line.format(scale_left, 0, scale_left, 1))
+print(line.format(-scale_left, 0, -scale_left, 1))
 print(line.format(scale_right, 0, scale_right, 1))
 
 print(epilogue)

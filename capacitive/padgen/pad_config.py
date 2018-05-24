@@ -40,7 +40,7 @@ scale_copper_width = (scale_ground_trace_width + min_clearance + scale_tooth_wid
     scale_root_width)
 
 scale_hole_to_edge = max(board_edge_clearance + 0.5*(scale_drill_dia + scale_drill_ring_dia),
-    scale_drill_ring_dia)
+    0.5*scale_drill_ring_dia + scale_drill_dia)
 
 scale_left = (scale_hole_to_edge + scale_mount_clearance +
     scale_ground_trace_width + min_clearance + scale_tooth_width)
