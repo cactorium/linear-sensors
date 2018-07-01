@@ -45,6 +45,8 @@ def main():
       components.append((part_num, count))
 
   with open(args.output, 'w') as f:
+    # header is necessary if you don't want to miss the first part
+    f.write("Mouser,Quantity")
     for c in components:
       f.write("{},{}\n".format(c[0], multiplier*int(c[1])))
 

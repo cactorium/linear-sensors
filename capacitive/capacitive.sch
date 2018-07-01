@@ -2043,7 +2043,7 @@ F 0 "C122" H 8910 5920 50  0000 L CNN
 F 1 "16pF 5%" H 8910 5770 50  0000 L CNN
 F 2 "Capacitors_SMD:C_0603_HandSoldering" H 8900 5850 50  0001 C CNN
 F 3 "" H 8900 5850 50  0001 C CNN
-F 4 "963-TMK042CG160JC-W" H 8900 5850 60  0001 C CNN "Mouser"
+F 4 "81-GCM1885C1H160FA6J" H 8900 5850 60  0001 C CNN "Mouser"
 	1    8900 5850
 	1    0    0    -1  
 $EndComp
@@ -2063,4 +2063,10 @@ F 3 "" H 8900 6100 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	8900 5950 8900 6100
+Text Notes 3300 5450 0    60   ~ 0
+Lol put this on wrong
+Text Notes 7275 6450 1    60   ~ 0
+Lengthen the footprint a little bit,\nhard to hand solder as is
+Text Notes 7575 5150 0    60   ~ 0
+Add HP stage; mains noise dominates; add ~200pF cap on input
 $EndSCHEMATC
