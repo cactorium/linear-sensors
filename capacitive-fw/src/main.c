@@ -7,24 +7,22 @@
 #define IS_PORT_B(x) ((uint8_t[]){0, 0, 0, 0, 1, 0, 1, 0})[x]
 #define PHASE_PORT(x) (IS_PORT_B(x) ? GPIO_PORT_B_BASE : GPIO_PORT_A_BASE)
 
+#define PINA_MASK(x) (IS_PORT_B(x) ? 0 : PHASE_PIN(x))
+#define PINB_MASK(x) (IS_PORT_B(x) ? PHASE_PIN(x) : 0)
+
 static void gpio_setup() {
-  // gpio_mode_setup(GPIO_PORT_A_BASE, GPIO_MODE_OUTPUT, 
-      // GPIO_PUPD_NONE, GPIO6|GPIO7|GPIO8|GPIO9|GPIO10|GPIO11);
-  // gpio_mode_setup(GPIO_PORT_B_BASE, GPIO_MODE_OUTPUT, 
-      // GPIO_PUPD_NONE, GPIO0|GPIO1);
+  gpio_mode_setup(GPIO_PORT_A_BASE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
+      PINA_MASK(0)|PINA_MASK(1)|PINA_MASK(2)|PINA_MASK(3)|
+      PINA_MASK(4)|PINA_MASK(5)|PINA_MASK(6)|PINA_MASK(7));
+  gpio_mode_setup(GPIO_PORT_B_BASE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
+      PINB_MASK(0)|PINB_MASK(1)|PINB_MASK(2)|PINB_MASK(3)|
+      PINB_MASK(4)|PINB_MASK(5)|PINB_MASK(6)|PINB_MASK(7));
 
-  // gpio_set(GPIO_PORT_B_BASE, GPIO0|GPIO1);
-  for (int i = 0; i < 8; ++i) {
-    gpio_mode_setup(PHASE_PORT(i), GPIO_MODE_OUTPUT, 
-      GPIO_PUPD_NONE, PHASE_PIN(i));
-  }
+  gpio_clear(GPIO_PORT_A_BASE, PINA_MASK(0)|PINA_MASK(1)|PINA_MASK(2)|PINA_MASK(3));
+  gpio_clear(GPIO_PORT_B_BASE, PINB_MASK(0)|PINB_MASK(1)|PINB_MASK(2)|PINB_MASK(3));
 
-  for (int i = 0; i < 4; ++i) {
-    gpio_clear(PHASE_PORT(i), PHASE_PIN(i));
-  }
-  for (int i = 0; i < 4; ++i) {
-    gpio_set(PHASE_PORT(i), PHASE_PIN(i));
-  }
+  gpio_set(GPIO_PORT_A_BASE, PINA_MASK(4)|PINA_MASK(5)|PINA_MASK(6)|PINA_MASK(7));
+  gpio_set(GPIO_PORT_B_BASE, PINB_MASK(4)|PINB_MASK(5)|PINB_MASK(6)|PINB_MASK(7));
 }
 
 static void clock_setup() {
