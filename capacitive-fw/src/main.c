@@ -10,7 +10,11 @@
 #define PINA_MASK(x) (IS_PORT_B(x) ? 0 : PHASE_PIN(x))
 #define PINB_MASK(x) (IS_PORT_B(x) ? PHASE_PIN(x) : 0)
 
+#define TX_PIN GPIO6 // port B
+#define RX_PIN GPIO7 // port B
+
 static void gpio_setup() {
+  // set up pins for pulses
   gpio_mode_setup(GPIO_PORT_A_BASE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
       PINA_MASK(0)|PINA_MASK(1)|PINA_MASK(2)|PINA_MASK(3)|
       PINA_MASK(4)|PINA_MASK(5)|PINA_MASK(6)|PINA_MASK(7));
@@ -23,18 +27,23 @@ static void gpio_setup() {
 
   gpio_set(GPIO_PORT_A_BASE, PINA_MASK(4)|PINA_MASK(5)|PINA_MASK(6)|PINA_MASK(7));
   gpio_set(GPIO_PORT_B_BASE, PINB_MASK(4)|PINB_MASK(5)|PINB_MASK(6)|PINB_MASK(7));
+
+
+  // set up pins for usart
+  gpio_mode_setup(GPIO_PORT_B_BASE, GPIO_MODE_AF, GPIO_PUPD_NONE, TX_PIN|RX_PIN);
+  gpio_set_af(GPIO_PORT_B_BASE, GPIO_AF0, TX_PIN|RX_PIN);
 }
 
 static void clock_setup() {
   // use external clock
   rcc_clock_setup_in_hse_8mhz_out_48mhz();
-  
-	/* Enable GPIOC clock for outputs */
+
+	// enable clocks for GPIO
 	rcc_periph_clock_enable(RCC_GPIOA);
 	rcc_periph_clock_enable(RCC_GPIOB);
 
-	/* Enable clocks for USART2. */
-	// rcc_periph_clock_enable(RCC_USART1);
+	// enable clocks for USART1
+	rcc_periph_clock_enable(RCC_USART1);
 }
 
 static void systick_setup() {
@@ -48,6 +57,17 @@ static void systick_setup() {
 
   systick_interrupt_enable();
   systick_counter_enable();
+}
+
+static void uart_setup() {
+	usart_set_baudrate(USART1, 115200);
+	usart_set_databits(USART1, 8);
+	usart_set_parity(USART1, USART_PARITY_NONE);
+	usart_set_stopbits(USART1, USART_CR2_STOPBITS_1);
+	usart_set_mode(USART1, USART_MODE_TX_RX);
+	usart_set_flow_control(USART1, USART_FLOWCONTROL_NONE);
+
+	usart_enable(USART1);
 }
 
 int tick = 0;
@@ -77,9 +97,15 @@ int main() {
   clock_setup();
 
   gpio_setup();
+  uart_setup();
   systick_setup();
 
   while (1) {
+    uint16_t c = usart_recv_blocking(USART1);
+    if (c >= 'A' && c <= 'Z') {
+      c += 'a' - 'A';
+    }
+    usart_send(USART1, c);
   }
 
   return 0;
