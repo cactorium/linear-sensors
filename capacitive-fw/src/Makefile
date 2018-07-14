@@ -17,7 +17,7 @@ clean:
 	$(Q)$(RM) -rf sensor.* *.o
 
 flash: sensor.hex
-	openocd -f ../capacitive.cfg "-c init; reset; halt; program sensor.hex verify exit"
+	openocd -f ../capacitive.cfg "-c init; reset; halt; program sensor.hex verify; reset; resume; exit"
 
 include $(OPENCM3_DIR)/mk/genlink-rules.mk
 include $(OPENCM3_DIR)/mk/gcc-rules.mk
