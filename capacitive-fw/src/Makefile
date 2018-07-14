@@ -13,9 +13,11 @@ include $(OPENCM3_DIR)/mk/gcc-config.mk
 
 all: sensor.elf sensor.hex
 
-
 clean:
 	$(Q)$(RM) -rf sensor.* *.o
+
+flash: sensor.hex
+	openocd -f ../capacitive.cfg "-c init; reset; halt; program sensor.hex verify exit"
 
 include $(OPENCM3_DIR)/mk/genlink-rules.mk
 include $(OPENCM3_DIR)/mk/gcc-rules.mk
