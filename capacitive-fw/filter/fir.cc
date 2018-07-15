@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
   for (auto i: data) {
     int32_t fir1_out = feed_fir1(i);
     int32_t fir2_out = feed_fir2(fir1_out);
-    int64_t out = feed_fir3(fir2_out);
+    int32_t out = feed_fir3(fir2_out);
     if (count > (FIR_HP_BUFFER_SZ + FIR_LP_BUFFER_SZ1 + FIR_LP_BUFFER_SZ2)) {
       std::cout << out << ",";
     }
