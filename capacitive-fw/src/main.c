@@ -2,6 +2,8 @@
 #include <libopencm3/stm32/adc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>
+
+#include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>
 
 #define PHASE_PIN(x) ((uint32_t[]){GPIO6, GPIO8, GPIO7, GPIO9, GPIO0, GPIO10, GPIO1, GPIO11})[x]
@@ -76,13 +78,15 @@ static void adc_setup() {
   static uint8_t channels[] = { 0 };
   adc_set_regular_sequence(ADC1, 1, channels);
 
-  adc_set_sample_time_on_all_channels(ADC1, ADC_SMPTIME_071DOT5);
+  adc_set_sample_time_on_all_channels(ADC1, ADC_SMPTIME_007DOT5);
 	adc_set_resolution(ADC1, ADC_RESOLUTION_12BIT);
 
   adc_disable_external_trigger_regular(ADC1);
 	adc_disable_analog_watchdog(ADC1);
 
-  adc_enable_eoc_interrupt(ADC);
+  nvic_enable_irq(NVIC_ADC_COMP_IRQ);
+  adc_enable_eoc_interrupt(ADC1);
+
 	adc_power_on(ADC1);
 }
 
@@ -101,22 +105,22 @@ static void uart_setup() {
 }
 
 uint16_t count = 0;
+uint16_t adc_count = 0;
 uint8_t tick = 0;
 uint8_t start_adc = 0;
 
-uint16_t adc_idx = 0;
+int16_t adc_idx = -1;
 uint16_t adc_data[1000];
 
 // sys tick rate is 200 KHz
 void sys_tick_handler() {
   // halve to get 100 KHz ADC sample rate
   if (start_adc) {
-    // start a conversion on one cycle, read it on the next
+    // start a conversion
     adc_start_conversion_regular(ADC1);
-  } else {
-    int tmp = adc_read_regular(ADC1);
-    if (adc_idx < 1000) {
-      adc_data[adc_idx] = tmp;
+    if (adc_idx == -1 && count == 25 && tick == 0) {
+      adc_idx = 0;
+    } else if (adc_idx < 1000 && adc_idx != -1) {
       ++adc_idx;
     }
   }
@@ -124,7 +128,7 @@ void sys_tick_handler() {
   // 200 KHz/25 = 8 KHz
   if (count == 25) {
     count = 0;
-    switch (tick) {
+    switch (tick & 3) {
     case 0:
       gpio_toggle(PHASE_PORT(0), PHASE_PIN(0));
       gpio_toggle(PHASE_PORT(4), PHASE_PIN(4));
@@ -142,12 +146,9 @@ void sys_tick_handler() {
       gpio_toggle(PHASE_PORT(7), PHASE_PIN(7));
     }
 
-    tick = (tick + 1) & 0x03;
+    tick = (tick + 1) & 0x07;
   }
   ++count;
-}
-
-void adc_comp_isr() {
 }
 
 static void usart_send_nibble(uint8_t n) {
@@ -168,6 +169,13 @@ static void usart_send_int16(uint16_t i) {
 static void usart_send_newline() {
   usart_send_blocking(USART1, '\r');
   usart_send_blocking(USART1, '\n');
+}
+
+void adc_comp_isr() {
+  int tmp = adc_read_regular(ADC1);
+  if (adc_idx < 1000 && adc_idx != -1) {
+    adc_data[adc_idx] = tmp;
+  }
 }
 
 int main() {
@@ -194,7 +202,7 @@ int main() {
         usart_send_blocking(USART1, ',');
       }
       usart_send_newline();
-      adc_idx = 0;
+      adc_idx = -1;
     }
   }
 

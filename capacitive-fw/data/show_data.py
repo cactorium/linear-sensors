@@ -62,7 +62,7 @@ with open(args.input, 'r') as f:
   # plt.plot(xs, ys, 'black')
 
   show_fft = True
-  # show_fft = False
+  show_fft = False
   if not show_fft:
     plt.plot(xs_hp, ys_hp, 'black')
     # plt.plot(xs_bp, ys_bp, 'g')
