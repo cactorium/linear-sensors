@@ -63,6 +63,8 @@ with open(args.input, 'r') as f:
 
   show_fft = True
   show_fft = False
+  save_fig = True
+
   if not show_fft:
     plt.plot(xs_hp, ys_hp, 'black')
     # plt.plot(xs_bp, ys_bp, 'g')
@@ -86,6 +88,9 @@ with open(args.input, 'r') as f:
     plt.plot(100e+3*w2, 20*np.log10(np.absolute(bp_fft2)), 'b')
     plt.plot(100e+3*w3, 20*np.log10(np.absolute(bp_fft3)), 'r')
 
-  plt.show()
+  if save_fig:
+    plt.savefig(args.input + '.png')
+  else:
+    plt.show()
 
 
