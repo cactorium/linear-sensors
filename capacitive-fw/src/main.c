@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/adc.h>
 #include <libopencm3/stm32/gpio.h>
@@ -236,8 +238,11 @@ static int8_t feed_phase_calc(int32_t val) {
   if (!phase_started) {
     return 0;
   }
-  // TODO update phase_i and phase_q
-  return 0;
+  if (phase_calc_count < 1000) {
+    // TODO update phase_i and phase_q
+    phase_calc_count++;
+  }
+  return phase_calc_count == 1000;
 }
 
 uint8_t iq_ready = 0;
