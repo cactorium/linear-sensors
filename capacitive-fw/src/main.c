@@ -112,7 +112,6 @@ uint8_t tick = 0;
 uint8_t start_adc = 0;
 
 int16_t adc_idx = -1;
-uint16_t adc_data[1000];
 
 // sys tick rate is 200 KHz
 void sys_tick_handler() {
@@ -153,12 +152,22 @@ void sys_tick_handler() {
   ++count;
 }
 
+uint16_t sample = 0;
+uint16_t sample_idx = 0;
+uint8_t new_sample = 0, overrun = 0;
 void adc_comp_isr() {
   int tmp = adc_read_regular(ADC1);
   if (adc_idx < 1000 && adc_idx != -1) {
-    adc_data[adc_idx] = tmp;
+    sample_idx = adc_idx;
+    sample = tmp;
+    if (new_sample) {
+      overrun = 1;
+    }
+    new_sample = 1;
   }
 }
+
+uint16_t samples[1000];
 
 enum usart_state {
   USART_FSM_IDLE,
@@ -194,7 +203,7 @@ static void run_tx_fsm() {
         } else if (usart_data.samples.nibble == 1) {
           usart_send(USART1, 'x');
         } else if (usart_data.samples.nibble < 6) {
-          usart_fsm_send_nibble_msb16(adc_data[usart_data.samples.word], usart_data.samples.nibble-2);
+          usart_fsm_send_nibble_msb16(samples[usart_data.samples.word], usart_data.samples.nibble-2);
         } else {
           usart_send(USART1, ',');
         }
@@ -260,6 +269,18 @@ int main() {
 
   while (1) {
     asm volatile ("wfi");
+    if (new_sample) {
+      uint16_t tmp = sample;
+      uint16_t idx = sample_idx;
+      samples[idx] = tmp;
+      // TODO: processing
+
+      new_sample = 0;
+    }
+    if (overrun) {
+      usart_send(USART1, 'o');
+      overrun = 0;
+    }
   }
 
   return 0;
