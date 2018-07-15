@@ -6,6 +6,8 @@
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>
 
+#include "fir.h"
+
 #define SAMPLE_BUFFER_SZ 1000
 
 #define PHASE_PIN(x) ((uint32_t[]){GPIO6, GPIO8, GPIO7, GPIO9, GPIO0, GPIO10, GPIO1, GPIO11})[x]
@@ -157,6 +159,7 @@ void sys_tick_handler() {
 uint16_t sample = 0;
 uint16_t sample_idx = 0;
 uint8_t new_sample = 0, overrun = 0;
+
 void adc_comp_isr() {
   int tmp = adc_read_regular(ADC1);
   sample_idx = adc_idx;
@@ -167,31 +170,158 @@ void adc_comp_isr() {
   new_sample = 1;
 }
 
-uint16_t samples[SAMPLE_BUFFER_SZ];
-
 enum usart_state {
   USART_FSM_IDLE,
   USART_FSM_SAMPLES,
-  USART_FSM_DEBUG
+  USART_FSM_DEBUG,
+  USART_FSM_WRITE_IQ_INIT,
+  USART_FSM_WRITE_IQ_DOWRITE
 } usart_state = USART_FSM_IDLE;
 
-union usart_data_t {
-  struct sample_data_t {
+uint8_t sample_full = 0, sample_start = 0;
+
+union {
+  struct {
     int8_t nibble;
     int16_t word;
   } samples;
-  struct debug_data_t {
+  struct {
     int8_t nibble;
     int16_t word;
   } debug;
+  struct {
+    int8_t nibble;
+    int16_t word;
+  } iq;
 } usart_data;
+
+static void run_tx_fsm();
+
+void usart1_isr() {
+  if (usart_get_flag(USART1, USART_ISR_RXNE)) {
+    uint16_t c = usart_recv(USART1);
+    if (usart_state == USART_FSM_IDLE) {
+      if (c == 'i') {
+        usart_state = USART_FSM_DEBUG;
+        usart_data.debug.nibble = 0;
+        usart_data.debug.word = 0;
+      }
+      if (c == 'd' && sample_full) {
+        usart_state = USART_FSM_SAMPLES;
+        usart_data.samples.nibble = 0;
+        usart_data.samples.word = 0;
+      }
+    }
+  }
+  // clear the TX flag in case we're not transmitting something
+  run_tx_fsm();
+}
+
+uint8_t phase_started = 0;
+int64_t phase_i = 0;
+int64_t phase_q = 0;
+uint8_t phase_calc_finished = 0;
+uint16_t phase_calc_count = 0;
+
+static void feed_phase_start() {
+  phase_calc_count = 0;
+  phase_started = 0;
+  phase_i = 0;
+  phase_q = 0;
+}
+
+// returns 1 if the period has finished, 0 otherwise
+static int8_t feed_phase_calc(int32_t val) {
+  // wait until the feed's been started
+  if (!phase_started) {
+    return 0;
+  }
+  // TODO update phase_i and phase_q
+  return 0;
+}
+
+uint8_t iq_ready = 0;
+uint64_t usart_i, usart_q;
+
+uint16_t samples[SAMPLE_BUFFER_SZ];
+
+int main() {
+  uint8_t fir_pumped = 0;
+  clock_setup();
+
+  gpio_setup();
+  uart_setup();
+  adc_setup();
+  systick_setup();
+
+  while (1) {
+    asm volatile ("wfi");
+    if (new_sample) {
+      uint16_t tmp = sample;
+      uint16_t idx = sample_idx;
+      new_sample = 0;
+
+      // write a copy for debugging purposes
+      if (idx < SAMPLE_BUFFER_SZ && !sample_full) {
+        if (!sample_start || (sample_start && idx == 0)) {
+          sample_start = 0;
+          samples[idx] = tmp;
+          if (idx == SAMPLE_BUFFER_SZ - 1) {
+            sample_full = 1;
+          }
+        }
+      }
+
+      int32_t fir_out1 = feed_fir1(sample);
+      int32_t fir_out2 = feed_fir2(fir_out1);
+      int32_t fir_out3 = feed_fir3(fir_out2);
+      if (fir_pumped) {
+        // NOTE: maybe this should be offset by some amount to compensate
+        // for the FIR delay
+        if (idx == 0) {
+          feed_phase_start();
+        }
+        if (feed_phase_calc(fir_out3)) {
+          // copy the phase data into some other location so the USART FSM can use it,
+          // and set iq_ready to trigger the FSM when it's available
+          usart_i = phase_i;
+          usart_q = phase_q;
+          iq_ready = 1;
+        }
+      } else {
+        // wait for all the buffers to fill with data so that they're outputting
+        // good data
+        // set fir_pumped after enough ADC samples have been collected
+        if (idx >= (FIR_HP_BUFFER_SZ + FIR_LP_BUFFER_SZ1 + FIR_LP_BUFFER_SZ2)) {
+          fir_pumped = 1;
+        }
+      }
+    }
+    if (overrun) {
+      usart_send(USART1, 'o');
+      overrun = 0;
+    }
+    if (iq_ready) {
+      if (usart_state == USART_FSM_IDLE) {
+        // NOTE: race condition with a USART receive at the exact same moment
+        // so that's why this is reduced to a single instruction, to make
+        // failure impotent instead of potentially causing data corruption
+        usart_state = USART_FSM_WRITE_IQ_INIT;
+        nvic_set_pending_irq(NVIC_USART1_IRQ);
+      }
+    }
+  }
+
+  return 0;
+}
 
 const char hexstr[] = "0123456789abcdef";
 static void usart_fsm_send_nibble_msb16(uint16_t b, uint8_t nibble) {
   usart_send(USART1, hexstr[(b >> (4*(3-nibble))) & 0x0f]);
 }
-
-uint8_t sample_full = 0, sample_start = 0;
+static void usart_fsm_send_nibble_msb64(uint64_t b, uint8_t nibble) {
+  usart_send(USART1, hexstr[(b >> (4*(15-nibble))) & 0x0f]);
+}
 
 // NOTE: will stop running if it doesn't transmit a character per call
 // can be resumed by calling this function from outside the ISR
@@ -229,6 +359,45 @@ static void run_tx_fsm() {
     case USART_FSM_DEBUG:
       usart_state = USART_FSM_IDLE;
       break;
+    case USART_FSM_WRITE_IQ_INIT:
+      usart_data.iq.nibble = 0;
+      usart_data.iq.word = 0;
+
+      usart_state = USART_FSM_WRITE_IQ_DOWRITE;
+      break;
+    case USART_FSM_WRITE_IQ_DOWRITE:
+      switch (usart_data.iq.word) {
+      case 0:
+        usart_fsm_send_nibble_msb64(phase_i, usart_data.iq.nibble);
+        ++usart_data.iq.nibble;
+        if (usart_data.iq.nibble == 16) {
+          usart_data.iq.nibble = 0;
+          ++usart_data.iq.word;
+        }
+        break;
+      case 1:
+        usart_send(USART1, ' ');
+        ++usart_data.iq.word;
+        break;
+      case 2:
+        usart_fsm_send_nibble_msb64(phase_i, usart_data.iq.nibble);
+        ++usart_data.iq.nibble;
+        if (usart_data.iq.nibble == 16) {
+          usart_data.iq.nibble = 0;
+          ++usart_data.iq.word;
+        }
+        break;
+      case 3:
+        usart_send(USART1, '\r');
+        ++usart_data.iq.word;
+        break;
+      case 4:
+        usart_send(USART1, '\n');
+        usart_state = USART_FSM_IDLE;
+        iq_ready = 0;
+        break;
+      }
+      break;
     case USART_FSM_IDLE:
     default:
       break;
@@ -239,59 +408,4 @@ static void run_tx_fsm() {
   } else {
     usart_disable_tx_interrupt(USART1);
   }
-}
-
-void usart1_isr() {
-  if (usart_get_flag(USART1, USART_ISR_RXNE)) {
-    uint16_t c = usart_recv(USART1);
-    if (usart_state == USART_FSM_IDLE) {
-      if (c == 'i') {
-        usart_state = USART_FSM_DEBUG;
-        usart_data.debug.nibble = 0;
-        usart_data.debug.word = 0;
-      }
-      if (c == 'd' && sample_full) {
-        usart_state = USART_FSM_SAMPLES;
-        usart_data.samples.nibble = 0;
-        usart_data.samples.word = 0;
-      }
-    }
-  }
-  // clear the TX flag in case we're not transmitting something
-  run_tx_fsm();
-}
-
-int main() {
-  clock_setup();
-
-  gpio_setup();
-  uart_setup();
-  adc_setup();
-  systick_setup();
-
-  while (1) {
-    asm volatile ("wfi");
-    if (new_sample) {
-      uint16_t tmp = sample;
-      uint16_t idx = sample_idx;
-      if (idx < SAMPLE_BUFFER_SZ && !sample_full) {
-        if (!sample_start || (sample_start && idx == 0)) {
-          sample_start = 0;
-          samples[idx] = tmp;
-          if (idx == SAMPLE_BUFFER_SZ - 1) {
-            sample_full = 1;
-          }
-        }
-      }
-      // TODO: processing
-
-      new_sample = 0;
-    }
-    if (overrun) {
-      usart_send(USART1, 'o');
-      overrun = 0;
-    }
-  }
-
-  return 0;
 }
