@@ -38,7 +38,8 @@ with open(args.input, 'r') as f:
   xs_bp, ys_bp = hp(xs_lp, ys_lp, 200)
 
   xs_lp2, ys_lp2 = lp(xs, ys, 64)
-  xs_bp2, ys_bp2 = hp_fixed(xs_lp2, ys_lp2, 100)
+  xs_lplp2, ys_lplp2 = lp(xs_lp2, ys_lp2, 32)
+  xs_bp2, ys_bp2 = hp_fixed(xs_lplp2, ys_lplp2, 100)
 
   # current best parameters
   xs_hp, ys_hp = hp_fixed(xs, ys, 128)
@@ -61,7 +62,7 @@ with open(args.input, 'r') as f:
   # plt.plot(xs, ys, 'black')
 
   show_fft = True
-  show_fft = False
+  # show_fft = False
   if not show_fft:
     plt.plot(xs_hp, ys_hp, 'black')
     # plt.plot(xs_bp, ys_bp, 'g')
