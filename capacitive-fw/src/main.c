@@ -6,6 +6,8 @@
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>
 
+#define SAMPLE_BUFFER_SZ 1000
+
 #define PHASE_PIN(x) ((uint32_t[]){GPIO6, GPIO8, GPIO7, GPIO9, GPIO0, GPIO10, GPIO1, GPIO11})[x]
 #define IS_PORT_B(x) ((uint8_t[]){0, 0, 0, 0, 1, 0, 1, 0})[x]
 #define PHASE_PORT(x) (IS_PORT_B(x) ? GPIO_PORT_B_BASE : GPIO_PORT_A_BASE)
@@ -107,21 +109,21 @@ static void uart_setup() {
 	usart_enable(USART1);
 }
 
-uint8_t count = 0;
-uint8_t tick = 0;
-uint8_t start_adc = 0;
 
 int16_t adc_idx = -1;
 
 // sys tick rate is 200 KHz
 void sys_tick_handler() {
+  static uint8_t start_adc = 0;
+  static uint8_t count = 0;
+  static uint8_t tick = 0;
   // halve to get 100 KHz ADC sample rate
   if (start_adc) {
     // start a conversion
     adc_start_conversion_regular(ADC1);
-    if (adc_idx == -1 && count == 25 && tick == 0) {
+    if (adc_idx >= SAMPLE_BUFFER_SZ && count == 25 && tick == 0) {
       adc_idx = 0;
-    } else if (adc_idx < 1000 && adc_idx != -1) {
+    } else {
       ++adc_idx;
     }
   }
@@ -157,17 +159,15 @@ uint16_t sample_idx = 0;
 uint8_t new_sample = 0, overrun = 0;
 void adc_comp_isr() {
   int tmp = adc_read_regular(ADC1);
-  if (adc_idx < 1000 && adc_idx != -1) {
-    sample_idx = adc_idx;
-    sample = tmp;
-    if (new_sample) {
-      overrun = 1;
-    }
-    new_sample = 1;
+  sample_idx = adc_idx;
+  sample = tmp;
+  if (new_sample) {
+    overrun = 1;
   }
+  new_sample = 1;
 }
 
-uint16_t samples[1000];
+uint16_t samples[SAMPLE_BUFFER_SZ];
 
 enum usart_state {
   USART_FSM_IDLE,
@@ -191,13 +191,15 @@ static void usart_fsm_send_nibble_msb16(uint16_t b, uint8_t nibble) {
   usart_send(USART1, hexstr[(b >> (4*(3-nibble))) & 0x0f]);
 }
 
+uint8_t sample_full = 0, sample_start = 0;
+
 // NOTE: will stop running if it doesn't transmit a character per call
 // can be resumed by calling this function from outside the ISR
 static void run_tx_fsm() {
   if (usart_get_flag(USART1, USART_ISR_TXE)) {
     switch (usart_state) {
     case USART_FSM_SAMPLES:
-      if (usart_data.samples.word < 1000) {
+      if (usart_data.samples.word < SAMPLE_BUFFER_SZ) {
         if (usart_data.samples.nibble == 0) {
           usart_send(USART1, '0');
         } else if (usart_data.samples.nibble == 1) {
@@ -212,7 +214,8 @@ static void run_tx_fsm() {
           usart_send(USART1, '\r');
         } else if (usart_data.samples.nibble == 1) {
           usart_send(USART1, '\n');
-          adc_idx = -1;
+          sample_full = 0;
+          sample_start = 1;
           usart_state = USART_FSM_IDLE;
         }
       }
@@ -231,7 +234,11 @@ static void run_tx_fsm() {
       break;
     }
   }
-
+  if (usart_state != USART_FSM_IDLE) {
+    usart_enable_tx_interrupt(USART1);
+  } else {
+    usart_disable_tx_interrupt(USART1);
+  }
 }
 
 void usart1_isr() {
@@ -243,17 +250,12 @@ void usart1_isr() {
         usart_data.debug.nibble = 0;
         usart_data.debug.word = 0;
       }
-      if (c == 'd') {
+      if (c == 'd' && sample_full) {
         usart_state = USART_FSM_SAMPLES;
         usart_data.samples.nibble = 0;
         usart_data.samples.word = 0;
       }
     }
-  }
-  if (usart_state != USART_FSM_IDLE) {
-    usart_enable_tx_interrupt(USART1);
-  } else {
-    usart_disable_tx_interrupt(USART1);
   }
   // clear the TX flag in case we're not transmitting something
   run_tx_fsm();
@@ -272,7 +274,15 @@ int main() {
     if (new_sample) {
       uint16_t tmp = sample;
       uint16_t idx = sample_idx;
-      samples[idx] = tmp;
+      if (idx < SAMPLE_BUFFER_SZ && !sample_full) {
+        if (!sample_start || (sample_start && idx == 0)) {
+          sample_start = 0;
+          samples[idx] = tmp;
+          if (idx == SAMPLE_BUFFER_SZ - 1) {
+            sample_full = 1;
+          }
+        }
+      }
       // TODO: processing
 
       new_sample = 0;
