@@ -42,8 +42,9 @@ with open(args.input, 'r') as f:
   xs_lplp2, ys_lplp2 = lp(xs_lp2, ys_lp2, 32)
   xs_bp2, ys_bp2 = hp_fixed(xs_lplp2, ys_lplp2, 100)
 
-  xs_hp, ys_hp = hp_fixed(xs, ys, 128)
-  xs_bp3, ys_bp3 = lp(xs_hp, ys_hp, 64)
+  xs_hp3, ys_hp3 = hp_fixed(xs, ys, 100)
+  xs_lp3, ys_lp3 = lp(xs_hp3, ys_hp3, 64)
+  xs_bp3, ys_bp3 = lp(xs_lp3, ys_lp3, 32)
 
   '''
   ys_sum = np.cumsum(ys)
@@ -62,12 +63,12 @@ with open(args.input, 'r') as f:
   # plt.plot(xs, ys, 'black')
 
   show_fft = True
-  #show_fft = False
+  show_fft = False
   save_fig = False
   #save_fig = True
 
   if not show_fft:
-    plt.plot(xs_hp, ys_hp, 'black')
+    plt.plot(xs_hp3, ys_hp3, 'black')
     # plt.plot(xs_bp, ys_bp, 'g')
     plt.plot(xs_bp3, ys_bp3, 'r')
     plt.plot(xs_bp2, ys_bp2, 'b')
