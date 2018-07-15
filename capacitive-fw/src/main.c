@@ -101,11 +101,13 @@ static void uart_setup() {
 	usart_set_mode(USART1, USART_MODE_TX_RX);
 	usart_set_flow_control(USART1, USART_FLOWCONTROL_NONE);
 
+  nvic_enable_irq(NVIC_USART1_IRQ);
+  usart_enable_rx_interrupt(USART1);
+
 	usart_enable(USART1);
 }
 
-uint16_t count = 0;
-uint16_t adc_count = 0;
+uint8_t count = 0;
 uint8_t tick = 0;
 uint8_t start_adc = 0;
 
@@ -151,31 +153,101 @@ void sys_tick_handler() {
   ++count;
 }
 
-static void usart_send_nibble(uint8_t n) {
-  const char s[] = "0123456789abcdef";
-  usart_send_blocking(USART1, s[n & 15]);
-}
-
-static void usart_send_byte(uint8_t b) {
-  usart_send_nibble(b >> 4);
-  usart_send_nibble(b & 0x0f);
-}
-
-static void usart_send_int16(uint16_t i) {
-  usart_send_byte(i >> 8);
-  usart_send_byte(i & 0x0ff);
-}
-
-static void usart_send_newline() {
-  usart_send_blocking(USART1, '\r');
-  usart_send_blocking(USART1, '\n');
-}
-
 void adc_comp_isr() {
   int tmp = adc_read_regular(ADC1);
   if (adc_idx < 1000 && adc_idx != -1) {
     adc_data[adc_idx] = tmp;
   }
+}
+
+enum usart_state {
+  USART_FSM_IDLE,
+  USART_FSM_SAMPLES,
+  USART_FSM_DEBUG
+} usart_state = USART_FSM_IDLE;
+
+union usart_data_t {
+  struct sample_data_t {
+    int8_t nibble;
+    int16_t word;
+  } samples;
+  struct debug_data_t {
+    int8_t nibble;
+    int16_t word;
+  } debug;
+} usart_data;
+
+const char hexstr[] = "0123456789abcdef";
+static void usart_fsm_send_nibble_msb16(uint16_t b, uint8_t nibble) {
+  usart_send(USART1, hexstr[(b >> (4*(3-nibble))) & 0x0f]);
+}
+
+// NOTE: will stop running if it doesn't transmit a character per call
+// can be resumed by calling this function from outside the ISR
+static void run_tx_fsm() {
+  if (usart_get_flag(USART1, USART_ISR_TXE)) {
+    switch (usart_state) {
+    case USART_FSM_SAMPLES:
+      if (usart_data.samples.word < 1000) {
+        if (usart_data.samples.nibble == 0) {
+          usart_send(USART1, '0');
+        } else if (usart_data.samples.nibble == 1) {
+          usart_send(USART1, 'x');
+        } else if (usart_data.samples.nibble < 6) {
+          usart_fsm_send_nibble_msb16(adc_data[usart_data.samples.word], usart_data.samples.nibble-2);
+        } else {
+          usart_send(USART1, ',');
+        }
+      } else {
+        if (usart_data.samples.nibble == 0) {
+          usart_send(USART1, '\r');
+        } else if (usart_data.samples.nibble == 1) {
+          usart_send(USART1, '\n');
+          adc_idx = -1;
+          usart_state = USART_FSM_IDLE;
+        }
+      }
+
+      ++usart_data.samples.nibble;
+      if (usart_data.samples.nibble > 6) {
+        usart_data.samples.nibble = 0;
+        ++usart_data.samples.word;
+      }
+      break;
+    case USART_FSM_DEBUG:
+      usart_state = USART_FSM_IDLE;
+      break;
+    case USART_FSM_IDLE:
+    default:
+      break;
+    }
+  }
+
+}
+
+void usart1_isr() {
+  if (usart_get_flag(USART1, USART_ISR_RXNE)) {
+    uint16_t c = usart_recv(USART1);
+    if (usart_state == USART_FSM_IDLE) {
+      if (c == 'i') {
+        usart_state = USART_FSM_DEBUG;
+        usart_data.debug.nibble = 0;
+        usart_data.debug.word = 0;
+      }
+      if (c == 'd') {
+        usart_state = USART_FSM_SAMPLES;
+        usart_data.samples.nibble = 0;
+        usart_data.samples.word = 0;
+      }
+    }
+  }
+  if (usart_state != USART_FSM_IDLE) {
+    usart_enable_tx_interrupt(USART1);
+  } else {
+    usart_disable_tx_interrupt(USART1);
+  }
+  // clear the TX flag in case we're not transmitting something
+  run_tx_fsm();
 }
 
 int main() {
@@ -187,23 +259,7 @@ int main() {
   systick_setup();
 
   while (1) {
-    uint16_t c = usart_recv_blocking(USART1);
-    if (c == 'i') {
-      int last_idx = adc_idx;
-      usart_send_int16(last_idx);
-      usart_send_int16(start_adc);
-      usart_send_newline();
-    }
-    if (c == 'd') {
-      for (int i = 0; i < 1000; ++i) {
-        usart_send_blocking(USART1, '0');
-        usart_send_blocking(USART1, 'x');
-        usart_send_int16(adc_data[i]);
-        usart_send_blocking(USART1, ',');
-      }
-      usart_send_newline();
-      adc_idx = -1;
-    }
+    asm volatile ("wfi");
   }
 
   return 0;
