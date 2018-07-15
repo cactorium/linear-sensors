@@ -51,7 +51,7 @@ int32_t feed_fir2(int32_t i) {
 }
 
 // lp, 32 window
-uint32_t feed_fir3(uint16_t) {
+int32_t feed_fir3(int32_t i) {
   static int32_t buf[FIR_LP_BUFFER_SZ2] = {0};
   static uint8_t cur_ptr = 0;
   static int32_t sum = 0;
@@ -66,7 +66,6 @@ uint32_t feed_fir3(uint16_t) {
   }
   
   return sum;
-
 }
 
 int main(int argc, char** argv) {
@@ -93,7 +92,12 @@ int main(int argc, char** argv) {
 
   int count = 0;
   for (auto i: data) {
-    std::cout << count << ":" << i << ",";
+    int32_t fir1_out = feed_fir1(i);
+    int32_t fir2_out = feed_fir2(fir1_out);
+    int64_t out = feed_fir3(fir2_out);
+    if (count > (FIR_HP_BUFFER_SZ + FIR_LP_BUFFER_SZ1 + FIR_LP_BUFFER_SZ2)) {
+      std::cout << out << ",";
+    }
     ++count;
   }
   std::cout << std::endl;
