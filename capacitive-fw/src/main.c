@@ -8,7 +8,15 @@
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>
 
-#include "fir.h"
+#define FIR_HP_BUFFER_SZ 100
+#define FIR_LP_BUFFER_SZ1 64
+#define FIR_LP_BUFFER_SZ2 32
+
+static int32_t feed_fir1(uint16_t i);
+static int32_t feed_fir2(int32_t i);
+static int32_t feed_fir3(int32_t i);
+
+#include "trig.h"
 
 #define SAMPLE_BUFFER_SZ 1000
 
@@ -222,7 +230,6 @@ void usart1_isr() {
 uint8_t phase_started = 0;
 int64_t phase_i = 0;
 int64_t phase_q = 0;
-uint8_t phase_calc_finished = 0;
 uint16_t phase_calc_count = 0;
 
 static void feed_phase_start() {
@@ -239,7 +246,8 @@ static int8_t feed_phase_calc(int32_t val) {
     return 0;
   }
   if (phase_calc_count < 1000) {
-    // TODO update phase_i and phase_q
+    phase_i += val; // (((int64_t)sin32(phase_calc_count))*val)/2048;
+    // phase_q += (((int64_t)cos32(phase_calc_count))*val)/2048;
     phase_calc_count++;
   }
   return phase_calc_count == 1000;
@@ -251,7 +259,6 @@ uint64_t usart_i, usart_q;
 uint16_t samples[SAMPLE_BUFFER_SZ];
 
 int main() {
-  uint8_t fir_pumped = 0;
   clock_setup();
 
   gpio_setup();
@@ -260,12 +267,13 @@ int main() {
   systick_setup();
 
   while (1) {
-    asm volatile ("wfi");
+    // asm volatile ("wfi");
     if (new_sample) {
       uint16_t tmp = sample;
       uint16_t idx = sample_idx;
       new_sample = 0;
 
+      /*
       // write a copy for debugging purposes
       if (idx < SAMPLE_BUFFER_SZ && !sample_full) {
         if (!sample_start || (sample_start && idx == 0)) {
@@ -276,30 +284,22 @@ int main() {
           }
         }
       }
+      */
 
-      int32_t fir_out1 = feed_fir1(sample);
+      int32_t fir_out1 = feed_fir1(tmp);
       int32_t fir_out2 = feed_fir2(fir_out1);
       int32_t fir_out3 = feed_fir3(fir_out2);
-      if (fir_pumped) {
-        // NOTE: maybe this should be offset by some amount to compensate
-        // for the FIR delay
-        if (idx == 0) {
-          feed_phase_start();
-        }
-        if (feed_phase_calc(fir_out3)) {
-          // copy the phase data into some other location so the USART FSM can use it,
-          // and set iq_ready to trigger the FSM when it's available
-          usart_i = phase_i;
-          usart_q = phase_q;
-          iq_ready = 1;
-        }
-      } else {
-        // wait for all the buffers to fill with data so that they're outputting
-        // good data
-        // set fir_pumped after enough ADC samples have been collected
-        if (idx >= (FIR_HP_BUFFER_SZ + FIR_LP_BUFFER_SZ1 + FIR_LP_BUFFER_SZ2)) {
-          fir_pumped = 1;
-        }
+      // NOTE: maybe this should be offset by some amount to compensate
+      // for the FIR delay
+      if (idx == 0) { 
+        feed_phase_start();
+      }
+      if (feed_phase_calc(fir_out3)) {
+        // copy the phase data into some other location so the USART FSM can use it,
+        // and set iq_ready to trigger the FSM when it's available
+        usart_i = phase_i;
+        usart_q = phase_q;
+        iq_ready = 1;
       }
     }
     if (overrun) {
@@ -313,6 +313,8 @@ int main() {
         // failure impotent instead of potentially causing data corruption
         usart_state = USART_FSM_WRITE_IQ_INIT;
         nvic_set_pending_irq(NVIC_USART1_IRQ);
+      } else {
+        usart_send(USART1, 'b');
       }
     }
   }
@@ -413,4 +415,63 @@ static void run_tx_fsm() {
   } else {
     usart_disable_tx_interrupt(USART1);
   }
+}
+
+// hp, 100 window
+static int32_t feed_fir1(uint16_t i) {
+  static uint16_t buf[FIR_HP_BUFFER_SZ] = {0};
+  static uint8_t half_ptr = FIR_HP_BUFFER_SZ/2;
+  static uint8_t cur_ptr = 0;
+  static uint32_t sum = 0;
+
+  sum += i;
+  sum -= buf[cur_ptr];
+  buf[cur_ptr] = i;
+
+  ++cur_ptr;
+  if (cur_ptr >= FIR_HP_BUFFER_SZ) {
+    cur_ptr = 0;
+  }
+  ++half_ptr;
+  if (half_ptr >= FIR_HP_BUFFER_SZ) {
+    half_ptr = 0;
+  }
+  
+  return FIR_HP_BUFFER_SZ*buf[half_ptr] - sum;
+}
+
+// lp, 64 window
+static int32_t feed_fir2(int32_t i) {
+  static int32_t buf[FIR_LP_BUFFER_SZ1] = {0};
+  static uint8_t cur_ptr = 0;
+  static int32_t sum = 0;
+
+  sum += i;
+  sum -= buf[cur_ptr];
+  buf[cur_ptr] = i;
+
+  ++cur_ptr;
+  if (cur_ptr >= FIR_LP_BUFFER_SZ1) {
+    cur_ptr = 0;
+  }
+  
+  return sum;
+}
+
+// lp, 32 window
+static int32_t feed_fir3(int32_t i) {
+  static int32_t buf[FIR_LP_BUFFER_SZ2] = {0};
+  static uint8_t cur_ptr = 0;
+  static int32_t sum = 0;
+
+  sum += i;
+  sum -= buf[cur_ptr];
+  buf[cur_ptr] = i;
+
+  ++cur_ptr;
+  if (cur_ptr >= FIR_LP_BUFFER_SZ2) {
+    cur_ptr = 0;
+  }
+  
+  return sum;
 }
