@@ -7,6 +7,9 @@ The project is currently using `libopencm3` to avoid needing to read through the
 Any SWD-capable OpenOCD-compatible programmer should work.
 You'll need the `arm-none-eabi-gcc` toolchain to build the project, although I'll probably add the final binaries to this repository at some point.
 
+## How it works (TLDR)
+Basically the position is approximately linear with respect to the detected phase of the signal, so the MCU needs to clean up the signal and find its phase to find its position.
+
 ## Internals
 Most of the processing is done in the main loop, with interrupts providing the timing for the ADC conversion and square waves.
 The system tick interrupt provides the timing for the entire system; it starts ADC conversions and toggles GPIO for the square waves.
@@ -17,13 +20,25 @@ The number of ADC cycles and total cycles are easily adjusted to allow experimen
 There's an overrun detector that'll output an 'o' onto the UART line whenever the main loop is taking too long to process the data.
 
 The main loop passes the ADC samples into a cascade of three FIR filters, to reduce a lot of the mains noise and harmonics in the signal.
-This is then multiplied with a 1 kHz cosine and 1 kHz sine wave to produce I and Q components, which are summed over the entire sampling period.
+This is then multiplied with a 1 kHz cosine and 1 kHz sine wave to produce I (in phase) and Q (quadrature) components, which are summed over the entire sampling period.
 This is then fed into an arctangent function based on CORDIC (Volder's algorithm) to produce this final phase information.
 
 A lot of the experimenting done to design these filters and test out CORDIC is available under the `filter/` directory.
 
 All of the math is done in a mixture of 32-bit and 64-bit math, with care to avoid any unnecessary multiplication and to avoid doing any divisions with anything other than a power of 2.
 This proved vital in reaching the desired performance of the unit.
+
+### Development notes
+All the Python files in `src/` are used to generate constants and headers and stuff.
+TODO add these to the Makefile
+
+## How to build
+
+```
+cd src/
+make
+make flash
+```
 
 ## TODOs
 - [ ] Wire up the voltage protection MOSFET correctly
