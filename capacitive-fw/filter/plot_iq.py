@@ -65,7 +65,7 @@ for l in sys.stdin:
   # print(xs)
 
   count += 1
-  if count % 4 == 0:
+  if count % 10 == 0:
     plt.gcf().clear()
     # plt.plot(xs, i_s)
     # plt.plot(xs, q_s)

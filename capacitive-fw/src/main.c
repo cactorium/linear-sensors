@@ -18,10 +18,16 @@ static int32_t feed_fir3(int32_t i);
 
 #include "trig.h"
 
+#define FULL_SCALE          6.25
+#define HALF_SCALE          (6.25/2)
+
+#define FULL_SCALE_PHASE_UNITS  ((int64_t)(FULL_SCALE*(1 << 31)))
+#define HALF_SCALE_PHASE_UNITS  ((int64_t)(HALF_SCALE*(1 << 31)))
+
 #define BASE_FREQ           1000
 #define SAMPLE_RATE         96000
-#define SAMPLE_NUM_PERIODS  26
-#define TOTAL_NUM_PERIODS   40
+#define SAMPLE_NUM_PERIODS  8
+#define TOTAL_NUM_PERIODS   10
 #define BASE_PERIOD         (SAMPLE_RATE/BASE_FREQ)
 #define SAMPLE_BUFFER_SZ    (SAMPLE_NUM_PERIODS*BASE_PERIOD)
 #define SAMPLE_PERIOD       SAMPLE_BUFFER_SZ 
@@ -255,8 +261,8 @@ static int8_t feed_phase_calc(int32_t val) {
     return 0;
   }
   if (phase_calc_count < SAMPLE_PERIOD) {
-    phase_i += (((int64_t)sin32(phase_calc_count))*val)/2048;
-    phase_q += (((int64_t)cos32(phase_calc_count))*val)/2048;
+    phase_i += (((int64_t)cos32(phase_calc_count))*val)/2048;
+    phase_q += (((int64_t)sin32(phase_calc_count))*val)/2048;
   }
   phase_calc_count++;
   return phase_calc_count == SAMPLE_PERIOD;
@@ -265,6 +271,14 @@ static int8_t feed_phase_calc(int32_t val) {
 uint8_t iq_ready = 0;
 uint64_t usart_i, usart_q;
 
+#include "cordic.c"
+
+int64_t cur_phase = 0;
+int64_t whole_steps = 0;
+
+static int64_t abs64(int64_t x) {
+  return (x > 0) ? x : -x;
+}
 // have the ADC ISR fill up a buffer with values while
 // calculating over it in the main loop. empty the buffer after the calculation
 // is complete and wait for the start of the next cycle
@@ -280,17 +294,36 @@ int main() {
     feed_phase_start();
     for (int i = 0; i < SAMPLE_BUFFER_SZ; ++i) {
       while (sample_idx < i) {}
-      uint16_t tmp = samples[i];
+      const uint16_t tmp = samples[i];
 
-      int32_t fir_out1 = feed_fir1(tmp);
-      int32_t fir_out2 = feed_fir2(fir_out1);
-      int32_t fir_out3 = feed_fir3(fir_out2);
+      const int32_t fir_out1 = feed_fir1(tmp);
+      const int32_t fir_out2 = feed_fir2(fir_out1);
+      const int32_t fir_out3 = feed_fir3(fir_out2);
 
       feed_phase_calc(fir_out3);
     }
+    const int64_t new_phase = cordic_scaled_atan(phase_i, phase_q);
+    const int64_t phase_up = whole_steps + FULL_SCALE_PHASE_UNITS + new_phase;
+    const int64_t phase_down = whole_steps - FULL_SCALE_PHASE_UNITS + new_phase;
+    const int64_t phase_same = whole_steps + new_phase;
+
+    const int64_t up_diff = abs64(phase_up - cur_phase);
+    const int64_t down_diff = abs64(phase_down - cur_phase);
+    const int64_t zero_diff = abs64(phase_same - cur_phase);
+
+    if ((up_diff < down_diff) && (up_diff < zero_diff)) {
+      cur_phase = phase_up;
+      whole_steps += FULL_SCALE_PHASE_UNITS;
+    } else if ((down_diff < up_diff) && (down_diff < zero_diff)) {
+      cur_phase = phase_down;
+      whole_steps -= FULL_SCALE_PHASE_UNITS;
+    } else {
+      cur_phase = phase_same;
+    }
+
     calc_finished = 1;
-    usart_i = phase_i;
-    usart_q = phase_q;
+    usart_i = cur_phase;
+    usart_q = 0;
     while (usart_state == USART_FSM_IDLE) {
       // NOTE: race condition with a USART receive at the exact same moment
       // so that's why this is reduced to a single instruction, to make
@@ -306,8 +339,8 @@ int main() {
 }
 
 const char hexstr[] = "0123456789abcdef";
-static void usart_fsm_send_nibble_msb32(uint32_t b, uint8_t nibble) {
-  usart_send(USART1, hexstr[(b >> (4*(7-nibble))) & 0x0f]);
+static void usart_fsm_send_nibble_msb16(uint16_t b, uint8_t nibble) {
+  usart_send(USART1, hexstr[(b >> (4*(3-nibble))) & 0x0f]);
 }
 static void usart_fsm_send_nibble_msb64(uint64_t b, uint8_t nibble) {
   usart_send(USART1, hexstr[(b >> (4*(15-nibble))) & 0x0f]);
@@ -324,8 +357,8 @@ static void run_tx_fsm() {
           usart_send(USART1, '0');
         } else if (usart_data.samples.nibble == 1) {
           usart_send(USART1, 'x');
-        } else if (usart_data.samples.nibble < 10) {
-          usart_fsm_send_nibble_msb32(samples[usart_data.samples.word], usart_data.samples.nibble-2);
+        } else if (usart_data.samples.nibble < 6) {
+          usart_fsm_send_nibble_msb16(samples[usart_data.samples.word], usart_data.samples.nibble-2);
         } else {
           usart_send(USART1, ',');
         }
@@ -340,7 +373,7 @@ static void run_tx_fsm() {
       }
 
       ++usart_data.samples.nibble;
-      if (usart_data.samples.nibble > 10) {
+      if (usart_data.samples.nibble > 6) {
         usart_data.samples.nibble = 0;
         ++usart_data.samples.word;
       }
