@@ -234,7 +234,7 @@ uint16_t phase_calc_count = 0;
 
 static void feed_phase_start() {
   phase_calc_count = 0;
-  phase_started = 0;
+  phase_started = 1;
   phase_i = 0;
   phase_q = 0;
 }
@@ -246,8 +246,8 @@ static int8_t feed_phase_calc(int32_t val) {
     return 0;
   }
   if (phase_calc_count < 1000) {
-    phase_i += val; // (((int64_t)sin32(phase_calc_count))*val)/2048;
-    // phase_q += (((int64_t)cos32(phase_calc_count))*val)/2048;
+    phase_i += (((int64_t)sin32(phase_calc_count))*val)/2048;
+    phase_q += (((int64_t)cos32(phase_calc_count))*val)/2048;
     phase_calc_count++;
   }
   return phase_calc_count == 1000;
@@ -273,7 +273,6 @@ int main() {
       uint16_t idx = sample_idx;
       new_sample = 0;
 
-      /*
       // write a copy for debugging purposes
       if (idx < SAMPLE_BUFFER_SZ && !sample_full) {
         if (!sample_start || (sample_start && idx == 0)) {
@@ -284,7 +283,6 @@ int main() {
           }
         }
       }
-      */
 
       int32_t fir_out1 = feed_fir1(tmp);
       int32_t fir_out2 = feed_fir2(fir_out1);
@@ -313,8 +311,8 @@ int main() {
         // failure impotent instead of potentially causing data corruption
         usart_state = USART_FSM_WRITE_IQ_INIT;
         nvic_set_pending_irq(NVIC_USART1_IRQ);
-      } else {
-        usart_send(USART1, 'b');
+      // } else {
+        // usart_send(USART1, 'b');
       }
     }
   }
