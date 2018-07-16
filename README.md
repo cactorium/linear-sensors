@@ -1,10 +1,14 @@
-# Linear PCB sensors (WIP!)
+# Linear PCB sensors
 This will eventually contain the sensing mechanisms for several different types of digital calipers.
 Luckily the patents on all of them have run out, so I can copy a lot of the exact details used in existing calipers, which should mean there's a lot of a better chance of getting good results out of this.
 The designs will be made in KiCAD, and will be under a sufficiently liberal license for you guys to use for whatever.
 Hopefully these will be cheap and easy enough to use for a lot of interesting applications, like close looping the axes on 3D printers for a lot cheaper than the $1k+ optical scales that's used on higher end models right now.
 
-## How they'll work
+## Capacitance-based sensor
+The capactive sensor appears to be working right now, with a sample rate of 96 samples/sec and a precision of about ~ +-0.03 mm (~ +-0.001in), limited by noise.
+It's currently affected moderately strongly by mains noise, the next revision add better filtering to the front end to reduce this effect.
+
+## How they work
 Right now I'm looking at two major designs, inductively coupled ones, developed by Mitutoyo, and the T-shaped capacitively coupled ones used in most cheap caliper designs by Mauser-Werke Oberndorf GmbH.
 In both cases, the basic gist is that there's a pattern on the stationary bit (called the stator) that affects its coupling with the bit that moves (let's call it the rotor), and in both cases a phase measurement based on measurements as a result of this coupling is used to get a fine measurement, while a counter is used to keep track of how many times the phase has gone about 360 degrees, giving a coarse measurement.
 The actual measurement is simply the sum of these two measurements.
