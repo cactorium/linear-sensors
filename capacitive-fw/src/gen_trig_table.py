@@ -1,7 +1,12 @@
 import math
 
-trig_consts = [str(int((2**31-1)*math.sin(math.pi/2*(x/25.)))) for x in range(25+1)]
+FREQUENCY = 1e+3
+SAMPLE_RATE = 96e+3
 
-print("const int32_t trig_quadrant[] = {")
+trig_consts = [str(int((2**31-1)*math.sin(2*math.pi*x*FREQUENCY/SAMPLE_RATE))) for x in range(int(SAMPLE_RATE/FREQUENCY/4)+1)]
+
+print("#define quadrant_size {}".format(int(SAMPLE_RATE/FREQUENCY/4)));
+print()
+print("const int32_t trig_quadrant[quadrant_size+1] = {")
 print("  {}".format(", ".join(trig_consts)))
 print("};")

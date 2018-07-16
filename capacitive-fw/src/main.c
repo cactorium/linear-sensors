@@ -16,11 +16,15 @@ static int32_t feed_fir1(uint16_t i);
 static int32_t feed_fir2(int32_t i);
 static int32_t feed_fir3(int32_t i);
 
-// TODO: fix trig functions to match up with 48kHz sample rate
 #include "trig.h"
 
-#define SAMPLE_BUFFER_SZ (1000/2)
-#define SAMPLE_PERIOD (1000/2)
+#define BASE_FREQ           1000
+#define SAMPLE_RATE         96000
+#define SAMPLE_NUM_PERIODS  26
+#define TOTAL_NUM_PERIODS   40
+#define BASE_PERIOD         (SAMPLE_RATE/BASE_FREQ)
+#define SAMPLE_BUFFER_SZ    (SAMPLE_NUM_PERIODS*BASE_PERIOD)
+#define SAMPLE_PERIOD       SAMPLE_BUFFER_SZ 
 
 #define PHASE_PIN(x) ((uint32_t[]){GPIO6, GPIO8, GPIO7, GPIO9, GPIO0, GPIO10, GPIO1, GPIO11})[x]
 #define IS_PORT_B(x) ((uint8_t[]){0, 0, 0, 0, 1, 0, 1, 0})[x]
@@ -72,7 +76,7 @@ static void systick_setup() {
   systick_counter_disable();
 
   systick_set_clocksource(STK_CSR_CLKSOURCE);
-  // 200 kHz system clock
+  // 96 kHz system clock
   systick_set_reload(48000000/96000-1);
   systick_clear();
 
@@ -124,19 +128,32 @@ static void uart_setup() {
 }
 
 
-int16_t adc_idx = -1;
+volatile int32_t adc_idx = -1;
+volatile int32_t sample_idx = -1;
+volatile uint8_t calc_finished = 0;
+volatile uint8_t sample_full = 0;
 
 // sys tick rate is 96 KHz
 void sys_tick_handler() {
   static uint8_t tick = 0;
-  // convert on even ticks
-  // if ((tick & 1) == 0) {
-  if (1) {
-    // start a conversion
+  // start a conversion
+  if (adc_idx < SAMPLE_BUFFER_SZ) {
     adc_start_conversion_regular(ADC1);
-    adc_idx = tick/2;
   }
-  // 48 KHz/6 = 8 KHz
+
+  if (tick == 0 && adc_idx >= TOTAL_NUM_PERIODS*BASE_PERIOD) {
+    if (calc_finished) {
+      sample_idx = -1;
+      adc_idx = 0;
+      calc_finished = 0;
+      sample_full = 0;
+    } else {
+      usart_send(USART1, 'o');
+    }
+  } else {
+    ++adc_idx;
+  }
+  // 96 KHz/12 = 8 KHz
   int tick_half = tick;
   if (tick_half >= 48) {
     tick_half -= 48;
@@ -160,19 +177,16 @@ void sys_tick_handler() {
   }
 }
 
-volatile uint16_t sample = 0;
-volatile uint16_t sample_idx = 0;
-volatile uint8_t new_sample = 0, overrun = 0;
+volatile uint16_t samples[SAMPLE_BUFFER_SZ];
 
 void adc_comp_isr() {
+  int idx = adc_idx;
   int tmp = adc_read_regular(ADC1);
-  // usart_send(USART1, 'a');
-  sample_idx = adc_idx;
-  sample = tmp;
-  if (new_sample) {
-    overrun = 1;
+  samples[idx] = tmp;
+  sample_idx = idx;
+  if (idx == SAMPLE_BUFFER_SZ - 1) {
+    sample_full = 1;
   }
-  new_sample = 1;
 }
 
 enum usart_state {
@@ -182,8 +196,6 @@ enum usart_state {
   USART_FSM_WRITE_IQ_INIT,
   USART_FSM_WRITE_IQ_DOWRITE
 } usart_state = USART_FSM_IDLE;
-
-uint8_t sample_full = 0, sample_start = 0;
 
 union {
   struct {
@@ -243,8 +255,8 @@ static int8_t feed_phase_calc(int32_t val) {
     return 0;
   }
   if (phase_calc_count < SAMPLE_PERIOD) {
-    phase_i += ((sin32(phase_calc_count)/65536)*(val/65536))/2048;
-    phase_q += ((cos32(phase_calc_count)/65536)*(val/65536))/2048;
+    phase_i += (((int64_t)sin32(phase_calc_count))*val)/2048;
+    phase_q += (((int64_t)cos32(phase_calc_count))*val)/2048;
   }
   phase_calc_count++;
   return phase_calc_count == SAMPLE_PERIOD;
@@ -253,10 +265,7 @@ static int8_t feed_phase_calc(int32_t val) {
 uint8_t iq_ready = 0;
 uint64_t usart_i, usart_q;
 
-uint32_t samples[SAMPLE_BUFFER_SZ];
-
-// Very, very close to calculation limit here
-// TODO: new approach; have the ADC ISR fill up a buffer with values while
+// have the ADC ISR fill up a buffer with values while
 // calculating over it in the main loop. empty the buffer after the calculation
 // is complete and wait for the start of the next cycle
 int main() {
@@ -268,47 +277,29 @@ int main() {
   systick_setup();
 
   while (1) {
-    // asm volatile ("wfi");
-    if (new_sample) {
-      // uint16_t tmp = adc_read_regular(ADC1);
-      // uint16_t idx = adc_idx;
-      uint16_t tmp = sample;
-      uint16_t idx = sample_idx;
-      new_sample = 0;
+    feed_phase_start();
+    for (int i = 0; i < SAMPLE_BUFFER_SZ; ++i) {
+      while (sample_idx < i) {}
+      uint16_t tmp = samples[i];
 
       int32_t fir_out1 = feed_fir1(tmp);
       int32_t fir_out2 = feed_fir2(fir_out1);
       int32_t fir_out3 = feed_fir3(fir_out2);
 
-      // NOTE: maybe this should be offset by some amount to compensate
-      // for the FIR delay
-      if (idx == 0) { 
-        feed_phase_start();
-      }
-      if (feed_phase_calc(fir_out3)) {
-        // copy the phase data into some other location so the USART FSM can use it,
-        // and set iq_ready to trigger the FSM when it's available
-        usart_i = phase_i;
-        usart_q = phase_q;
-        iq_ready = 1;
-      }
+      feed_phase_calc(fir_out3);
     }
-    if (overrun) {
-      usart_send(USART1, 'o');
-      overrun = 0;
+    calc_finished = 1;
+    usart_i = phase_i;
+    usart_q = phase_q;
+    while (usart_state == USART_FSM_IDLE) {
+      // NOTE: race condition with a USART receive at the exact same moment
+      // so that's why this is reduced to a single instruction, to make
+      // failure impotent instead of potentially causing data corruption
+      usart_state = USART_FSM_WRITE_IQ_INIT;
+      usart_enable_tx_interrupt(USART1);
+      nvic_set_pending_irq(NVIC_USART1_IRQ);
     }
-    if (iq_ready) {
-      if (usart_state == USART_FSM_IDLE) {
-        // NOTE: race condition with a USART receive at the exact same moment
-        // so that's why this is reduced to a single instruction, to make
-        // failure impotent instead of potentially causing data corruption
-        usart_state = USART_FSM_WRITE_IQ_INIT;
-        usart_enable_tx_interrupt(USART1);
-        nvic_set_pending_irq(NVIC_USART1_IRQ);
-      // } else {
-        // usart_send(USART1, 'b');
-      }
-    }
+    while (calc_finished) {}
   }
 
   return 0;
@@ -344,7 +335,6 @@ static void run_tx_fsm() {
         } else if (usart_data.samples.nibble == 1) {
           usart_send(USART1, '\n');
           sample_full = 0;
-          sample_start = 1;
           usart_state = USART_FSM_IDLE;
         }
       }
