@@ -12,7 +12,7 @@ static int32_t trig_normalize(int32_t x) {
   return x;
 }
 
-int32_t sin32(int32_t x_) {
+static int32_t sin32(int32_t x_) {
   const int32_t x = trig_normalize(x_);
   if (x < 25) {
     return trig_quadrant[x];
@@ -25,7 +25,7 @@ int32_t sin32(int32_t x_) {
   }
 }
 
-int32_t cos32(int32_t x_) {
+static int32_t cos32(int32_t x_) {
   const int32_t x = trig_normalize(x_);
   if (x < 25) {
     return trig_quadrant[25-x];
@@ -34,7 +34,7 @@ int32_t cos32(int32_t x_) {
   } else if (x < 75) {
     return -trig_quadrant[75-x];
   } else {
-    return -trig_quadrant[x-75];
+    return trig_quadrant[x-75];
   }
 }
 

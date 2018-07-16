@@ -8,17 +8,19 @@
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>
 
-#define FIR_HP_BUFFER_SZ 100
-#define FIR_LP_BUFFER_SZ1 64
-#define FIR_LP_BUFFER_SZ2 32
+#define FIR_HP_BUFFER_SZ (100)
+#define FIR_LP_BUFFER_SZ1 (64)
+#define FIR_LP_BUFFER_SZ2 (32)
 
 static int32_t feed_fir1(uint16_t i);
 static int32_t feed_fir2(int32_t i);
 static int32_t feed_fir3(int32_t i);
 
+// TODO: fix trig functions to match up with 48kHz sample rate
 #include "trig.h"
 
-#define SAMPLE_BUFFER_SZ 1000
+#define SAMPLE_BUFFER_SZ (1000/2)
+#define SAMPLE_PERIOD (1000/2)
 
 #define PHASE_PIN(x) ((uint32_t[]){GPIO6, GPIO8, GPIO7, GPIO9, GPIO0, GPIO10, GPIO1, GPIO11})[x]
 #define IS_PORT_B(x) ((uint8_t[]){0, 0, 0, 0, 1, 0, 1, 0})[x]
@@ -71,7 +73,7 @@ static void systick_setup() {
 
   systick_set_clocksource(STK_CSR_CLKSOURCE);
   // 200 kHz system clock
-  systick_set_reload(48000000/200000-1);
+  systick_set_reload(48000000/96000-1);
   systick_clear();
 
   systick_interrupt_enable();
@@ -124,54 +126,47 @@ static void uart_setup() {
 
 int16_t adc_idx = -1;
 
-// sys tick rate is 200 KHz
+// sys tick rate is 96 KHz
 void sys_tick_handler() {
-  static uint8_t start_adc = 0;
-  static uint8_t count = 0;
   static uint8_t tick = 0;
-  // halve to get 100 KHz ADC sample rate
-  if (start_adc) {
+  // convert on even ticks
+  // if ((tick & 1) == 0) {
+  if (1) {
     // start a conversion
     adc_start_conversion_regular(ADC1);
-    if (adc_idx >= SAMPLE_BUFFER_SZ && count == 25 && tick == 0) {
-      adc_idx = 0;
-    } else {
-      ++adc_idx;
-    }
+    adc_idx = tick/2;
   }
-  start_adc = !start_adc;
-  // 200 KHz/25 = 8 KHz
-  if (count == 25) {
-    count = 0;
-    switch (tick & 3) {
-    case 0:
-      gpio_toggle(PHASE_PORT(0), PHASE_PIN(0));
-      gpio_toggle(PHASE_PORT(4), PHASE_PIN(4));
-      break;
-    case 1:
-      gpio_toggle(PHASE_PORT(1), PHASE_PIN(1));
-      gpio_toggle(PHASE_PORT(5), PHASE_PIN(5));
-      break;
-    case 2:
-      gpio_toggle(PHASE_PORT(2), PHASE_PIN(2));
-      gpio_toggle(PHASE_PORT(6), PHASE_PIN(6));
-      break;
-    case 3:
-      gpio_toggle(PHASE_PORT(3), PHASE_PIN(3));
-      gpio_toggle(PHASE_PORT(7), PHASE_PIN(7));
-    }
-
-    tick = (tick + 1) & 0x07;
+  // 48 KHz/6 = 8 KHz
+  int tick_half = tick;
+  if (tick_half >= 48) {
+    tick_half -= 48;
   }
-  ++count;
+  if (tick_half == 0) { 
+    gpio_toggle(PHASE_PORT(0), PHASE_PIN(0));
+    gpio_toggle(PHASE_PORT(4), PHASE_PIN(4));
+  } else if (tick_half == 12) {
+    gpio_toggle(PHASE_PORT(1), PHASE_PIN(1));
+    gpio_toggle(PHASE_PORT(5), PHASE_PIN(5));
+  } else if (tick_half == 24) {
+    gpio_toggle(PHASE_PORT(2), PHASE_PIN(2));
+    gpio_toggle(PHASE_PORT(6), PHASE_PIN(6));
+  } else if (tick_half == 36) {
+    gpio_toggle(PHASE_PORT(3), PHASE_PIN(3));
+    gpio_toggle(PHASE_PORT(7), PHASE_PIN(7));
+  }
+  ++tick;
+  if (tick == 96) {
+    tick = 0;
+  }
 }
 
-uint16_t sample = 0;
-uint16_t sample_idx = 0;
-uint8_t new_sample = 0, overrun = 0;
+volatile uint16_t sample = 0;
+volatile uint16_t sample_idx = 0;
+volatile uint8_t new_sample = 0, overrun = 0;
 
 void adc_comp_isr() {
   int tmp = adc_read_regular(ADC1);
+  // usart_send(USART1, 'a');
   sample_idx = adc_idx;
   sample = tmp;
   if (new_sample) {
@@ -227,6 +222,8 @@ void usart1_isr() {
   run_tx_fsm();
 }
 
+#include "trig.c"
+
 uint8_t phase_started = 0;
 int64_t phase_i = 0;
 int64_t phase_q = 0;
@@ -245,19 +242,23 @@ static int8_t feed_phase_calc(int32_t val) {
   if (!phase_started) {
     return 0;
   }
-  if (phase_calc_count < 1000) {
-    phase_i += (((int64_t)sin32(phase_calc_count))*val)/2048;
-    phase_q += (((int64_t)cos32(phase_calc_count))*val)/2048;
-    phase_calc_count++;
+  if (phase_calc_count < SAMPLE_PERIOD) {
+    phase_i += ((sin32(phase_calc_count)/65536)*(val/65536))/2048;
+    phase_q += ((cos32(phase_calc_count)/65536)*(val/65536))/2048;
   }
-  return phase_calc_count == 1000;
+  phase_calc_count++;
+  return phase_calc_count == SAMPLE_PERIOD;
 }
 
 uint8_t iq_ready = 0;
 uint64_t usart_i, usart_q;
 
-uint16_t samples[SAMPLE_BUFFER_SZ];
+uint32_t samples[SAMPLE_BUFFER_SZ];
 
+// Very, very close to calculation limit here
+// TODO: new approach; have the ADC ISR fill up a buffer with values while
+// calculating over it in the main loop. empty the buffer after the calculation
+// is complete and wait for the start of the next cycle
 int main() {
   clock_setup();
 
@@ -269,24 +270,16 @@ int main() {
   while (1) {
     // asm volatile ("wfi");
     if (new_sample) {
+      // uint16_t tmp = adc_read_regular(ADC1);
+      // uint16_t idx = adc_idx;
       uint16_t tmp = sample;
       uint16_t idx = sample_idx;
       new_sample = 0;
 
-      // write a copy for debugging purposes
-      if (idx < SAMPLE_BUFFER_SZ && !sample_full) {
-        if (!sample_start || (sample_start && idx == 0)) {
-          sample_start = 0;
-          samples[idx] = tmp;
-          if (idx == SAMPLE_BUFFER_SZ - 1) {
-            sample_full = 1;
-          }
-        }
-      }
-
       int32_t fir_out1 = feed_fir1(tmp);
       int32_t fir_out2 = feed_fir2(fir_out1);
       int32_t fir_out3 = feed_fir3(fir_out2);
+
       // NOTE: maybe this should be offset by some amount to compensate
       // for the FIR delay
       if (idx == 0) { 
@@ -310,6 +303,7 @@ int main() {
         // so that's why this is reduced to a single instruction, to make
         // failure impotent instead of potentially causing data corruption
         usart_state = USART_FSM_WRITE_IQ_INIT;
+        usart_enable_tx_interrupt(USART1);
         nvic_set_pending_irq(NVIC_USART1_IRQ);
       // } else {
         // usart_send(USART1, 'b');
@@ -321,8 +315,8 @@ int main() {
 }
 
 const char hexstr[] = "0123456789abcdef";
-static void usart_fsm_send_nibble_msb16(uint16_t b, uint8_t nibble) {
-  usart_send(USART1, hexstr[(b >> (4*(3-nibble))) & 0x0f]);
+static void usart_fsm_send_nibble_msb32(uint32_t b, uint8_t nibble) {
+  usart_send(USART1, hexstr[(b >> (4*(7-nibble))) & 0x0f]);
 }
 static void usart_fsm_send_nibble_msb64(uint64_t b, uint8_t nibble) {
   usart_send(USART1, hexstr[(b >> (4*(15-nibble))) & 0x0f]);
@@ -339,8 +333,8 @@ static void run_tx_fsm() {
           usart_send(USART1, '0');
         } else if (usart_data.samples.nibble == 1) {
           usart_send(USART1, 'x');
-        } else if (usart_data.samples.nibble < 6) {
-          usart_fsm_send_nibble_msb16(samples[usart_data.samples.word], usart_data.samples.nibble-2);
+        } else if (usart_data.samples.nibble < 10) {
+          usart_fsm_send_nibble_msb32(samples[usart_data.samples.word], usart_data.samples.nibble-2);
         } else {
           usart_send(USART1, ',');
         }
@@ -356,7 +350,7 @@ static void run_tx_fsm() {
       }
 
       ++usart_data.samples.nibble;
-      if (usart_data.samples.nibble > 6) {
+      if (usart_data.samples.nibble > 10) {
         usart_data.samples.nibble = 0;
         ++usart_data.samples.word;
       }
@@ -373,7 +367,7 @@ static void run_tx_fsm() {
     case USART_FSM_WRITE_IQ_DOWRITE:
       switch (usart_data.iq.word) {
       case 0:
-        usart_fsm_send_nibble_msb64(phase_i, usart_data.iq.nibble);
+        usart_fsm_send_nibble_msb64(usart_i, usart_data.iq.nibble);
         ++usart_data.iq.nibble;
         if (usart_data.iq.nibble == 16) {
           usart_data.iq.nibble = 0;
@@ -385,7 +379,7 @@ static void run_tx_fsm() {
         ++usart_data.iq.word;
         break;
       case 2:
-        usart_fsm_send_nibble_msb64(phase_i, usart_data.iq.nibble);
+        usart_fsm_send_nibble_msb64(usart_q, usart_data.iq.nibble);
         ++usart_data.iq.nibble;
         if (usart_data.iq.nibble == 16) {
           usart_data.iq.nibble = 0;
@@ -420,7 +414,7 @@ static int32_t feed_fir1(uint16_t i) {
   static uint16_t buf[FIR_HP_BUFFER_SZ] = {0};
   static uint8_t half_ptr = FIR_HP_BUFFER_SZ/2;
   static uint8_t cur_ptr = 0;
-  static uint32_t sum = 0;
+  static int32_t sum = 0;
 
   sum += i;
   sum -= buf[cur_ptr];
