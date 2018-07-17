@@ -41,7 +41,7 @@ static int32_t feed_fir3(int32_t i);
 
 #define TX_PIN GPIO6 // port B
 #define RX_PIN GPIO7 // port B
-
+#define ZERO_PIN GPIO3 // port A
 #define ADC_PIN GPIO0 // port A
 
 static void clock_setup() {
@@ -184,6 +184,7 @@ void sys_tick_handler() {
 }
 
 volatile uint16_t samples[SAMPLE_BUFFER_SZ];
+volatile uint8_t zero_mode = 0;
 
 void adc_comp_isr() {
   int idx = adc_idx;
@@ -234,6 +235,9 @@ void usart1_isr() {
         usart_data.samples.nibble = 0;
         usart_data.samples.word = 0;
       }
+      if (c == 'z') {
+        zero_mode = 1;
+      }
     }
   }
   // clear the TX flag in case we're not transmitting something
@@ -274,6 +278,7 @@ uint64_t usart_i, usart_q;
 #include "cordic.c"
 
 int64_t cur_phase = 0;
+int64_t phase_offset = 0;
 int64_t whole_steps = 0;
 
 static int64_t abs64(int64_t x) {
@@ -321,8 +326,13 @@ int main() {
       cur_phase = phase_same;
     }
 
+    if (!(gpio_port_read(GPIOA) & ZERO_PIN) || zero_mode) {
+      phase_offset = -cur_phase;
+      zero_mode = 0;
+    }
+
     calc_finished = 1;
-    usart_i = cur_phase;
+    usart_i = cur_phase + phase_offset;
     usart_q = 0;
     while (usart_state == USART_FSM_IDLE) {
       // NOTE: race condition with a USART receive at the exact same moment

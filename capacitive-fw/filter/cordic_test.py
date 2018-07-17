@@ -34,7 +34,7 @@ approx = np.array([cordic_atan(x[i], y[i]) for i in range(thetas.shape[0])])
 real = (2**31*np.arctan2(y, x)).astype(int)
 
 error = approx - real
-plt.plot(thetas, error/2**31)
+plt.plot(thetas, 6.25*error/2**31/(2*math.pi))
 # plt.plot(thetas, approx/2**31)
 # plt.plot(thetas, approx/2**31-thetas)
 # plt.plot(thetas, real/2**31)

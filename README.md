@@ -5,7 +5,7 @@ The designs will be made in KiCAD, and will be under a sufficiently liberal lice
 Hopefully these will be cheap and easy enough to use for a lot of interesting applications, like close looping the axes on 3D printers for a lot cheaper than the $1k+ optical scales that's used on higher end models right now.
 
 ## Capacitance-based sensor
-The capactive sensor appears to be working right now, with a sample rate of 96 samples/sec and a precision of about ~ +-0.03 mm (~ +-0.001in), limited by noise.
+The capactive sensor appears to be working right now, with a sample rate of 96 samples/sec and a precision of about ~ +-0.06 mm (~ +-0.002in), limited by noise.
 It's currently affected moderately strongly by mains noise, the next revision add better filtering to the front end to reduce this effect.
 
 ## How they work

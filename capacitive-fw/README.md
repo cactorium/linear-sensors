@@ -2,6 +2,7 @@
 This is probably not the cleanest directory structure ever, but it works.
 The firmware developed here is meant to be programmed onto the STM32F07 chip on the capacitive board.
 This provides UART output on the J102 header at 115200 baud (adjustable in the source code) of the current position, output as a 64 bit hexadecimal, followed by a space and 64 zeros (TODO remove extra output).
+The button on the board zeros out the reading, and the reading can also be zeroed out by sending a "z" into the UART port.
 
 The project is currently using `libopencm3` to avoid needing to read through the STM32F07 reference manual, and the OpenOCD config is for the FT232H chip. TODO provide more info about SWD programming with Adafruit's FT232H breakout
 Any SWD-capable OpenOCD-compatible programmer should work.
