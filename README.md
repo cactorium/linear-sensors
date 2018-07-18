@@ -6,7 +6,10 @@ Hopefully these will be cheap and easy enough to use for a lot of interesting ap
 
 ## Capacitance-based sensor
 The capactive sensor appears to be working right now, with a sample rate of 96 samples/sec and a precision of about ~ +-0.06 mm (~ +-0.002in), limited by noise.
-It's currently affected moderately strongly by mains noise, the next revision add better filtering to the front end to reduce this effect.
+The accuracy appears to stay within +- 0.01mm for a lot of the range, but the inaccuracy increases at various points (and also if you're touching the scale) along its range.
+It's currently affected moderately strongly by mains noise, the next revision will add better filtering to the front end to reduce this issue.
+
+There also appear to be some large inaccuracies across its full range, which also I'm currently working out.
 
 ## How they work
 Right now I'm looking at two major designs, inductively coupled ones, developed by Mitutoyo, and the T-shaped capacitively coupled ones used in most cheap caliper designs by Mauser-Werke Oberndorf GmbH.

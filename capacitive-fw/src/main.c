@@ -408,22 +408,10 @@ static void run_tx_fsm() {
         }
         break;
       case 1:
-        usart_send(USART1, ' ');
-        ++usart_data.iq.word;
-        break;
-      case 2:
-        usart_fsm_send_nibble_msb64(usart_q, usart_data.iq.nibble);
-        ++usart_data.iq.nibble;
-        if (usart_data.iq.nibble == 16) {
-          usart_data.iq.nibble = 0;
-          ++usart_data.iq.word;
-        }
-        break;
-      case 3:
         usart_send(USART1, '\r');
         ++usart_data.iq.word;
         break;
-      case 4:
+      case 2:
         usart_send(USART1, '\n');
         usart_state = USART_FSM_IDLE;
         iq_ready = 0;
