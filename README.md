@@ -5,9 +5,13 @@ The designs will be made in KiCAD, and will be under a sufficiently liberal lice
 Hopefully these will be cheap and easy enough to use for a lot of interesting applications, like close looping the axes on 3D printers for a lot cheaper than the $1k+ optical scales that's used on higher end models right now.
 
 ## Capacitance-based sensor
-The capactive sensor appears to be working right now, with a sample rate of 96 samples/sec and a precision of about ~ +-0.06 mm (~ +-0.002in), limited by noise.
+~The capactive sensor appears to be working right now, with a sample rate of 96 samples/sec and a precision of about ~ +-0.06 mm (~ +-0.002in), limited by noise.
 The accuracy appears to stay within +- 0.01mm for a lot of the range, but the inaccuracy increases at various points (and also if you're touching the scale) along its range.
-It's currently affected moderately strongly by mains noise, the next revision will add better filtering to the front end to reduce this issue.
+It's currently affected moderately strongly by mains noise, the next revision will add better filtering to the front end to reduce this issue.~
+So the signal is actually incredibly accurate, as long as the surfaces are closely mating and the amplifier isn't clipping.
+I'm getting about ~0.002 mm precision (still need to check accuracy across the full range) after carefully adjusting gain to remove clipping.
+The signal doesn't appear anything near a sine wave at the output, it mainly consists of a lot of sharp spikes that I guess the FIRs turn into something closer to a sine wave.
+It's currently probably limited by the numerical accuracy of the arctangent operation in the processing, but I need to do more testing to see how accurate it is across its range before tuning its precision any more.
 
 There also appear to be some large inaccuracies across its full range, which also I'm currently working out.
 
