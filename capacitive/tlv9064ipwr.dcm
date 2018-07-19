@@ -1,0 +1,8 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP TLV9064IPWR
+D Operational Amplifiers - Op Amps 4 channel, 10-MHz, Low-Noise, RRIO, CMOS Operational Amplifier for Cost-Sensitive Systems 14-TSSOP -40 to 125
+F http://www.ti.com/lit/ds/symlink/tlv9064.pdf
+$ENDCMP
+#
+#End Doc Library

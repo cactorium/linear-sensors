@@ -1,0 +1,23 @@
+Final amplifier stage, double checking stability and expected response
+
+.func IF(a,b,c) 'ternary_fcn( a , b , c )'
+.func LIMIT(x, y, z) {min(max(x, min(y, z)), max(z, y))}
+
+.include "TLV9062 PSPICE Model RevB/TLV9062.cir"
+
+Vin   in  0   dc  1.65 ac 40m  sin(2.00 1m 1k)
+Vp    v33 0   dc  3.3
+
+R1    in  2   10k
+Rf    2   out 100k
+Cf    2   out 1.8n
+
+XU1   4   2   v33   0   out TLV9062
+
+R2    out 5   100k
+Cf2   5   6   15n
+Vref  v165    0     dc    1.65
+XU2   v165    5     v33   0   6   TLV9062
+
+R3    6   4   1k
+R4    4   v165  100k
