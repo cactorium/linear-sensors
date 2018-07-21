@@ -4,7 +4,7 @@
 ## caliper geometry
 wavenumber = 6
 l = 6.25
-W = 10.0
+W = 5.0
 g = 0.16
 
 width_ratio = 1
