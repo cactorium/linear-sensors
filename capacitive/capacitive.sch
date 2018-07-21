@@ -1328,7 +1328,7 @@ F 2 "capacitive:Rohm_UMT3F" H 3250 5750 50  0001 C CNN
 F 3 "" H 3050 5650 50  0001 C CNN
 F 4 "755-RU1C001ZPTL" H 3050 5650 60  0001 C CNN "Mouser"
 	1    3050 5650
-	1    0    0    1   
+	1    0    0    -1  
 $EndComp
 $Comp
 L C_Small C114
