@@ -160,7 +160,7 @@ U 1 1 5B06A8D6
 P 5550 4250
 F 0 "U102" H 5550 4250 60  0000 C CNN
 F 1 "scales" H 5550 4250 60  0000 C CNN
-F 2 "capacitive:Capacitive_Scales200.00" H 5550 4250 60  0001 C CNN
+F 2 "capacitive:Capacitive_Scales320.00" H 5550 4250 60  0001 C CNN
 F 3 "" H 5550 4250 60  0001 C CNN
 	1    5550 4250
 	1    0    0    -1  

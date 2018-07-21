@@ -1,7 +1,7 @@
 (export (version D)
   (design
     (source /home/kelvin/repos/linear-sensors/capacitive-scale/scale.sch)
-    (date "Thu 24 May 2018 08:14:31 AM EDT")
+    (date "Fri 20 Jul 2018 09:24:11 PM EDT")
     (tool "Eeschema 4.0.7")
     (sheet (number 1) (name /) (tstamps /)
       (title_block
@@ -47,7 +47,7 @@
       (tstamp 5B06A7F4))
     (comp (ref U102)
       (value scales)
-      (footprint capacitive:Capacitive_Scales200.00)
+      (footprint capacitive:Capacitive_Scales320.00)
       (libsource (lib outline) (part outline))
       (sheetpath (names /) (tstamps /))
       (tstamp 5B06A8D6)))

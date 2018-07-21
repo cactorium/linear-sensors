@@ -53,7 +53,7 @@ U 1 1 5B06A702
 P 6450 3950
 F 0 "J101" H 6450 4220 50  0000 C CNN
 F 1 "TEST_1P" H 6450 4150 50  0000 C CNN
-F 2 "capacitive:Slide_Drill_Left" H 6650 3950 50  0001 C CNN
+F 2 "capacitive:Scale_Drill_Left" H 6650 3950 50  0001 C CNN
 F 3 "" H 6650 3950 50  0001 C CNN
 	1    6450 3950
 	1    0    0    -1  
@@ -64,7 +64,7 @@ U 1 1 5B06A73D
 P 7000 3950
 F 0 "J102" H 7000 4220 50  0000 C CNN
 F 1 "TEST_1P" H 7000 4150 50  0000 C CNN
-F 2 "capacitive:Slide_Drill_Right" H 7200 3950 50  0001 C CNN
+F 2 "capacitive:Scale_Drill_Right" H 7200 3950 50  0001 C CNN
 F 3 "" H 7200 3950 50  0001 C CNN
 	1    7000 3950
 	1    0    0    -1  
@@ -75,7 +75,7 @@ U 1 1 5B06A76E
 P 7000 4600
 F 0 "J104" H 7000 4870 50  0000 C CNN
 F 1 "TEST_1P" H 7000 4800 50  0000 C CNN
-F 2 "capacitive:Slide_Drill_Right" H 7200 4600 50  0001 C CNN
+F 2 "capacitive:Scale_Drill_Right" H 7200 4600 50  0001 C CNN
 F 3 "" H 7200 4600 50  0001 C CNN
 	1    7000 4600
 	1    0    0    -1  
@@ -86,7 +86,7 @@ U 1 1 5B06A7AB
 P 6500 4600
 F 0 "J103" H 6500 4870 50  0000 C CNN
 F 1 "TEST_1P" H 6500 4800 50  0000 C CNN
-F 2 "capacitive:Slide_Drill_Left" H 6700 4600 50  0001 C CNN
+F 2 "capacitive:Scale_Drill_Left" H 6700 4600 50  0001 C CNN
 F 3 "" H 6700 4600 50  0001 C CNN
 	1    6500 4600
 	1    0    0    -1  
