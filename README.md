@@ -23,6 +23,8 @@ There's now three stages of amplification, the first one, which is adjustable an
 There's several stages of low pass and high pass filtering throughout all this, plus some bypass resistors in case this all turns out wrong so I can revert to the v1 analog circuitry in the worst case.
 The edges of the PCB were also rounded just to make it look a little nicer, and the mounting holes are now evenly spaced to make mechanical stuff a lot easier to work out.
 
+The BOM cost is about $16, which is pretty reasonable, but I'll probably try to get it a little lower next revision.
+
 ## How they work
 Right now I'm looking at two major designs, inductively coupled ones, developed by Mitutoyo, and the T-shaped capacitively coupled ones used in most cheap caliper designs by Mauser-Werke Oberndorf GmbH.
 In both cases, the basic gist is that there's a pattern on the stationary bit (called the stator) that affects its coupling with the bit that moves (let's call it the rotor), and in both cases a phase measurement based on measurements as a result of this coupling is used to get a fine measurement, while a counter is used to keep track of how many times the phase has gone about 360 degrees, giving a coarse measurement.
