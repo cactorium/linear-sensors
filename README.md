@@ -4,7 +4,7 @@ Luckily the patents on all of them have run out, so I can copy a lot of the exac
 The designs will be made in KiCAD, and will be under a sufficiently liberal license for you guys to use for whatever.
 Hopefully these will be cheap and easy enough to use for a lot of interesting applications, like close looping the axes on 3D printers for a lot cheaper than the $1k+ optical scales that's used on higher end models right now.
 
-## Capacitance-based sensor
+## Capacitance-based sensor v1
 ~The capactive sensor appears to be working right now, with a sample rate of 96 samples/sec and a precision of about ~ +-0.06 mm (~ +-0.002in), limited by noise.
 The accuracy appears to stay within +- 0.01mm for a lot of the range, but the inaccuracy increases at various points (and also if you're touching the scale) along its range.
 It's currently affected moderately strongly by mains noise, the next revision will add better filtering to the front end to reduce this issue.~
@@ -14,6 +14,14 @@ The signal doesn't appear anything near a sine wave at the output, it mainly con
 It's currently probably limited by the numerical accuracy of the arctangent operation in the processing, but I need to do more testing to see how accurate it is across its range before tuning its precision any more.
 
 There also appear to be some large inaccuracies across its full range, which also I'm currently working out.
+
+## Capacitance-based sensor v2
+I reduced the width of the scale by half to try to improve the form factor and added a second stage of filtering to try to reduce its susceptibility to noise.
+I removed the large metallic layer that used to overlap the receiving pad to see if that would reduce the amount of noise.
+I'm pretty sure covering it with ground will reduce the output signal by adding a lot of parasitic capacitance, so right now it's bare aside from a trace to get the signal from the receiving pad.
+There's now three stages of amplification, the first one, which is adjustable and has a gain from 1x to 10x, and two fixed stages which are 2x and ~10x respectively.
+There's several stages of low pass and high pass filtering throughout all this, plus some bypass resistors in case this all turns out wrong so I can revert to the v1 analog circuitry in the worst case.
+The edges of the PCB were also rounded just to make it look a little nicer, and the mounting holes are now evenly spaced to make mechanical stuff a lot easier to work out.
 
 ## How they work
 Right now I'm looking at two major designs, inductively coupled ones, developed by Mitutoyo, and the T-shaped capacitively coupled ones used in most cheap caliper designs by Mauser-Werke Oberndorf GmbH.
