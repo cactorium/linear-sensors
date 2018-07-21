@@ -21,7 +21,7 @@ Reference,Quantity,Identifier,Package,Value,Tolerance,Voltage,Current,Power,PN,M
 "J105","1","","","RX_PAD","","","","","","NoPart"
 "SW101","1","","","SW_Push","","","","","","612-LL3301NF065QG"
 "R111","1","","","1 5%","","","","","","755-ESR03EZPJ1R0"
-"Q101","1","","","RU1C002ZPTCL","","","","","","755-RU1C002ZPTCL"
+"Q101","1","","","RU1C002ZPTCL","","","","","","755-RU1C001ZPTL"
 "D102","1","","","ESD9X5.0ST5G","","","","","","863-ESD9X5.0ST5G"
 "RV102","1","","","5k linear","","","","","","81-PVG5H502C03B00"
 "J108","1","","","LL","","","","","","NoPart"

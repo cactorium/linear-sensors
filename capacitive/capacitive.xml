@@ -2,7 +2,7 @@
 <export version="D">
   <design>
     <source>/home/kelvin/repos/linear-sensors/capacitive/capacitive.sch</source>
-    <date>Fri 20 Jul 2018 10:46:44 PM EDT</date>
+    <date>Sat 21 Jul 2018 07:41:09 AM EDT</date>
     <tool>Eeschema 4.0.7</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
@@ -463,7 +463,7 @@
       <value>RU1C002ZPTCL</value>
       <footprint>capacitive:Rohm_UMT3F</footprint>
       <fields>
-        <field name="Mouser">755-RU1C002ZPTCL</field>
+        <field name="Mouser">755-RU1C001ZPTL</field>
       </fields>
       <libsource lib="device" part="Q_PMOS_GSD"/>
       <sheetpath names="/" tstamps="/"/>

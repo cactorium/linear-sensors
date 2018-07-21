@@ -1,7 +1,7 @@
 (export (version D)
   (design
     (source /home/kelvin/repos/linear-sensors/capacitive/capacitive.sch)
-    (date "Fri 20 Jul 2018 08:13:19 PM EDT")
+    (date "Sat 21 Jul 2018 07:41:07 AM EDT")
     (tool "Eeschema 4.0.7")
     (sheet (number 1) (name /) (tstamps /)
       (title_block
@@ -371,7 +371,7 @@
       (value RU1C002ZPTCL)
       (footprint capacitive:Rohm_UMT3F)
       (fields
-        (field (name Mouser) 755-RU1C002ZPTCL))
+        (field (name Mouser) 755-RU1C001ZPTL))
       (libsource (lib device) (part Q_PMOS_GSD))
       (sheetpath (names /) (tstamps /))
       (tstamp 5B007344))
@@ -971,6 +971,8 @@
   (libraries
     (library (logical device)
       (uri /usr/share/kicad/library/device.lib))
+    (library (logical switches)
+      (uri /usr/share/kicad/library/switches.lib))
     (library (logical conn)
       (uri /usr/share/kicad/library/conn.lib))
     (library (logical stm32f070c6t6)
@@ -980,9 +982,7 @@
     (library (logical tlv74133pdbvr)
       (uri tlv74133pdbvr.lib))
     (library (logical tlv9064ipwr)
-      (uri tlv9064ipwr.lib))
-    (library (logical switches)
-      (uri /usr/share/kicad/library/switches.lib)))
+      (uri tlv9064ipwr.lib)))
   (nets
     (net (code 1) (name /OSC_8MHz)
       (node (ref U103) (pin 3))
