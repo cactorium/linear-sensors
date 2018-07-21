@@ -46,7 +46,7 @@ def main():
 
   with open(args.output, 'w') as f:
     # header is necessary if you don't want to miss the first part
-    f.write("Mouser,Quantity")
+    f.write("Mouser,Quantity\n")
     for c in components:
       f.write("{},{}\n".format(c[0], multiplier*int(c[1])))
 
