@@ -37,7 +37,7 @@
   )
 
   (setup
-    (last_trace_width 0.45)
+    (last_trace_width 0.1524)
     (user_trace_width 0.2)
     (user_trace_width 0.3)
     (user_trace_width 0.45)
@@ -92,7 +92,7 @@
       (mirror false)
       (drillshape 0)
       (scaleselection 1)
-      (outputdirectory gerber/))
+      (outputdirectory capacitive-gerber/))
   )
 
   (net 0 "")

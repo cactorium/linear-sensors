@@ -3,7 +3,7 @@
   (general
     (links 3)
     (no_connects 1)
-    (area 79 -2.4 117.800001 323.200001)
+    (area 80.924999 -0.575001 113.475001 320.575001)
     (thickness 1.6)
     (drawings 5)
     (tracks 0)
@@ -87,7 +87,7 @@
       (mirror false)
       (drillshape 0)
       (scaleselection 1)
-      (outputdirectory gerber/))
+      (outputdirectory capacitive-scale-gerber/))
   )
 
   (net 0 "")

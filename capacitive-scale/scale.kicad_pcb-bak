@@ -3,9 +3,9 @@
   (general
     (links 3)
     (no_connects 1)
-    (area 70.949279 96.924999 118.440741 303.075001)
+    (area 79 -2.4 117.800001 323.200001)
     (thickness 1.6)
-    (drawings 4)
+    (drawings 5)
     (tracks 0)
     (zones 0)
     (modules 6)
@@ -360,6 +360,9 @@
       (xy -11.2524 320) (xy -11.2524 0)) (layer F.Cu) (width 0.001))
   )
 
+  (gr_text "320mm, 6.25mm spacing Rev2" (at 86 160 90) (layer F.SilkS)
+    (effects (font (size 1.5 1.5) (thickness 0.3)))
+  )
   (gr_line (start 81 320.5) (end 113.4 320.5) (layer Edge.Cuts) (width 0.15) (tstamp 5B06B1C9))
   (gr_line (start 81 -0.5) (end 113.4 -0.5) (layer Edge.Cuts) (width 0.15))
   (gr_line (start 113.4 -0.5) (end 113.4 320.5) (layer Edge.Cuts) (width 0.15))
