@@ -3114,7 +3114,7 @@
   (gr_line (start 141 128) (end 79 128) (layer Edge.Cuts) (width 0.15))
   (gr_line (start 149 64) (end 149 120) (layer Edge.Cuts) (width 0.15))
   (gr_line (start 79 56) (end 141 56) (layer Edge.Cuts) (width 0.15))
-  (gr_text Rev.2 (at 135.725 120.6) (layer F.SilkS)
+  (gr_text Rev.2.1 (at 135.725 120.6) (layer F.SilkS)
     (effects (font (size 1.5 1.5) (thickness 0.3)))
   )
 

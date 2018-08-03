@@ -4,6 +4,9 @@ Luckily the patents on all of them have run out, so I can copy a lot of the exac
 The designs will be made in KiCAD, and will be under a sufficiently liberal license for you guys to use for whatever.
 Hopefully these will be cheap and easy enough to use for a lot of interesting applications, like close looping the axes on 3D printers for a lot cheaper than the $1k+ optical scales that's used on higher end models right now.
 
+
+**NOTE: the schematic and PCB are now in KiCAD 5. I don't know how backwards compatible it is with older version of KiCAD**
+
 ## Capacitance-based sensor v1
 ~The capactive sensor appears to be working right now, with a sample rate of 96 samples/sec and a precision of about ~ +-0.06 mm (~ +-0.002in), limited by noise.
 The accuracy appears to stay within +- 0.01mm for a lot of the range, but the inaccuracy increases at various points (and also if you're touching the scale) along its range.
@@ -24,6 +27,12 @@ There's several stages of low pass and high pass filtering throughout all this, 
 The edges of the PCB were also rounded just to make it look a little nicer, and the mounting holes are now evenly spaced to make mechanical stuff a lot easier to work out.
 
 The BOM cost is about $16, which is pretty reasonable, but I'll probably try to get it a little lower next revision.
+
+The extra filter does appear to work very nicely; the output actually looks like a sine wave, so it might be possible to remove some of the digital filtering while maintaining the same accuracy, but I'm going to work on mechanically stabilizing the setup to get more repeatable measurements.
+It does appear to be noticeably better just from rough observations; it takes a lot less effort to get the measurement to where it's bouncing around +- 0.001mm compared with the first revision.
+I'm guessing the next revision will focus on improving the form factor and cost.
+
+TODO: add pictures
 
 ## How they work
 Right now I'm looking at two major designs, inductively coupled ones, developed by Mitutoyo, and the T-shaped capacitively coupled ones used in most cheap caliper designs by Mauser-Werke Oberndorf GmbH.
