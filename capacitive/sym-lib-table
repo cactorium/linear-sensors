@@ -1,0 +1,9 @@
+(sym_lib_table
+  (lib (name capacitive-rescue)(type Legacy)(uri ${KIPRJMOD}/capacitive-rescue.lib)(options "")(descr ""))
+  (lib (name stm32f070c6t6)(type Legacy)(uri ${KIPRJMOD}/stm32f070c6t6.lib)(options "")(descr ""))
+  (lib (name tlv9062idr)(type Legacy)(uri ${KIPRJMOD}/tlv9062idr.lib)(options "")(descr ""))
+  (lib (name sg7050can_8mhz)(type Legacy)(uri ${KIPRJMOD}/sg7050can_8mhz.lib)(options "")(descr ""))
+  (lib (name tlv74133pdbvr)(type Legacy)(uri ${KIPRJMOD}/tlv74133pdbvr.lib)(options "")(descr ""))
+  (lib (name d3v3x4u10lp-7)(type Legacy)(uri ${KIPRJMOD}/d3v3x4u10lp-7.lib)(options "")(descr ""))
+  (lib (name tlv9064ipwr)(type Legacy)(uri ${KIPRJMOD}/tlv9064ipwr.lib)(options "")(descr ""))
+)
